@@ -142,17 +142,19 @@ WSGI_APPLICATION = "config.wsgi.application"
 # ---------------------------------------------------------------------------
 # Database
 # ---------------------------------------------------------------------------
+# Database
+# https://docs.djangoproject.com/en/6.1/ref/settings/#databases
+
+import dj_database_url
+
+# Use the DATABASE_URL environment variable set in Vercel
 DATABASES = {
-    "default": env.db(
-        "DATABASE_URL",
-        default=f"sqlite:///{(BASE_DIR / 'db.sqlite3').as_posix()}",
+    "default": dj_database_url.parse(
+        os.environ.get("PRISMA_DATABASE_URL", ""),
+        conn_max_age=600,  # Keep connections alive for 10 minutes
+        conn_health_checks=True, # Django 4.1+; validates broken connections
     )
 }
-if not DEBUG and DATABASES["default"]["ENGINE"].endswith("sqlite3"):
-    raise ImproperlyConfigured(
-        "SQLite is not supported in production — set DATABASE_URL to a "
-        "PostgreSQL (or equivalent) connection string."
-    )
 
 
 # ---------------------------------------------------------------------------
@@ -419,5 +421,4 @@ if not DEBUG:
             "encryption key. Set TICKET_ENCRYPTION_KEYS='1:<fernet-key>'."
         )
 
-# settings.py
-TICKET_QR_SIGNING_KEY = "tn8QHlbA-VgHimXtZ6R8bHaT1KUrAGQjcgFO-Q60cUW9tZXNu_ITbEhIAY_1aO1Gi2abtNcsR4u6Ax1qdcX1ig"
+
