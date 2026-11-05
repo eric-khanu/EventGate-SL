@@ -1,13 +1,15 @@
 #!/bin/bash
-
-# Exit immediately if a command exits with a non-zero status
 set -e
 
-# Install dependencies
+# Install the system library for python-magic
+echo "Installing libmagic..."
+apt-get update && apt-get install -y libmagic1
+
+# Install Python dependencies
 echo "Installing requirements..."
 pip install -r requirements.txt
 
-# Collect static files (so Tailwind/CSS works)
+# Collect static files
 echo "Collecting static files..."
 python manage.py collectstatic --noinput
 
