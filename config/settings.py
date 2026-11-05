@@ -58,9 +58,7 @@ if not SECRET_KEY:
 
 SECRET_KEY_FALLBACKS = env.list("DJANGO_SECRET_KEY_FALLBACKS", default=[])
 
-ALLOWED_HOSTS = env.list(
-    "DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"],
-)
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '.vercel.app']
 
 if DEBUG:
     ALLOWED_HOSTS = list(ALLOWED_HOSTS) + ["testserver"]
@@ -189,19 +187,21 @@ USE_TZ = True
 # ---------------------------------------------------------------------------
 # Static & media
 # ---------------------------------------------------------------------------
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"] if (BASE_DIR / "static").exists() else []
 
-MEDIA_URL = "media/"
+MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+# Removed STATICFILES_STORAGE
 STORAGES = {
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        # Temporarily use this to guarantee CSS loads
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage", 
     },
 }
 
