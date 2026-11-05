@@ -2,18 +2,19 @@
   "version": 2,
   "builds": [
     {
-      "src": "business_app/wsgi.py",
+      "src": "config/wsgi.py",
       "use": "@vercel/python",
-      "config": {
-        "maxLambdaSize": "15mb"
-      }
+      "config": { "maxLambdaSize": "15mb" }
     }
   ],
   "routes": [
     {
+      "src": "/static/(.*)",
+      "dest": "/static/$1"
+    },
+    {
       "src": "/(.*)",
-      "dest": "business_app/wsgi.py"
+      "dest": "config/wsgi.py"
     }
-  ],
-  "buildCommand": "pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate --noinput"
+  ]
 }
