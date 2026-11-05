@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Scanners · {{ event.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+
+  <a href="{% url 'events:organizer_dashboard' %}"
+     class="text-sm text-slate-500 hover:underline">← Dashboard</a>
+
+  <header>
+    <h1 class="text-2xl font-black">Scanners</h1>
+    <p class="text-slate-600 mt-1">
+      People who can check in tickets for
+      <strong>{{ event.title }}</strong>.
+    </p>
+  </header>
+
+  {% if messages %}
+    <div role="status" aria-live="polite" class="space-y-2">
+      {% for message in messages %}
+        <div class="p-3 rounded text-sm
+          {% if 'error' in message.tags %}bg-red-100 text-red-900 border border-red-200
+          {% elif 'success' in message.tags %}bg-emerald-100 text-emerald-900 border border-emerald-200
+          {% else %}bg-slate-100 text-slate-900 border border-slate-200{% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {# ---- Add form ---- #}
+  <form method="post"
+        action="{% url 'events:add_scanner' event.slug %}"
+        class="bg-white border rounded-2xl p-5 flex flex-wrap gap-2 items-end">
+    {% csrf_token %}
+    <div class="flex-1 min-w-[16rem]">
+      <label for="scanner-identifier" class="block text-sm font-semibold text-slate-700 mb-1">
+        Username or email
+      </label>
+      <input id="scanner-identifier" name="identifier" type="text" required
+             autocomplete="off"
+             placeholder="e.g. jane or jane@example.com"
+             class="w-full border rounded-lg p-2 text-sm">
+      <p class="text-xs text-slate-500 mt-1">
+        The person must already have an EventGate account with the
+        <em>scanner</em> role.
+      </p>
+    </div>
+    <button type="submit"
+            class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg px-4 py-2 text-sm">
+      Add scanner
+    </button>
+  </form>
+
+  {# ---- Current scanners ---- #}
+  <section>
+    <h2 class="text-lg font-bold mb-3">
+      Current scanners
+      <span class="text-sm font-normal text-slate-500">
+        ({{ scanners|length }})
+      </span>
+    </h2>
+
+    {% if scanners %}
+      <div class="bg-white border rounded-2xl overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-100 text-slate-700">
+            <tr>
+              <th class="p-3 text-left">User</th>
+              <th class="p-3 text-left">Added by</th>
+              <th class="p-3 text-left">Added</th>
+              <th class="p-3 text-right"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for scanner in scanners %}
+              <tr class="border-t">
+                <td class="p-3">
+                  <div class="font-semibold">{{ scanner.user.username }}</div>
+                  {% if scanner.user.email %}
+                    <div class="text-xs text-slate-500">{{ scanner.user.email }}</div>
+                  {% endif %}
+                </td>
+                <td class="p-3 text-slate-600">
+                  {{ scanner.created_by.username|default:"—" }}
+                </td>
+                <td class="p-3 text-slate-500">
+                  {{ scanner.created_at|date:"d M Y · g:i A" }}
+                </td>
+                <td class="p-3 text-right">
+                  <form method="post"
+                        action="{% url 'events:remove_scanner' event.slug scanner.pk %}"
+                        data-confirm="Remove {{ scanner.user.username }} as a scanner?">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="text-xs font-semibold text-red-700 hover:underline">
+                      Remove
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="bg-white border rounded-2xl p-6 text-center text-slate-600">
+        <p class="font-semibold">No scanners yet.</p>
+        <p class="text-sm mt-1">
+          Add someone above to let them check in tickets for this event.
+        </p>
+      </div>
+    {% endif %}
+  </section>
+
+</div>
+
+<script>
+  document.querySelectorAll("form[data-confirm]").forEach(function (form) {
+    form.addEventListener("submit", function (e) {
+      if (!window.confirm(form.dataset.confirm)) e.preventDefault();
+    });
+  });
+</script>
+{% endblock %}

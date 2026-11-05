@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Create an account · EventGate SL{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto bg-white border rounded-2xl p-7">
+
+  <h1 class="text-3xl font-black">Create an account</h1>
+  <p class="text-slate-600 mt-2">
+    Book tickets or manage your own events.
+  </p>
+
+  {% if form.non_field_errors %}
+    <div class="mt-4 p-3 rounded bg-red-100 text-red-900 border border-red-200 text-sm"
+         role="alert">
+      {% for error in form.non_field_errors %}
+        <div>{{ error }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <form method="post" class="mt-5 space-y-4" novalidate>
+    {% csrf_token %}
+
+    {% for field in form %}
+      <div>
+        <label for="{{ field.id_for_label }}" class="block text-sm font-medium mb-1">
+          {{ field.label }}{% if field.field.required %}<span aria-hidden="true"> *</span>{% endif %}
+        </label>
+
+        {{ field }}
+
+        {% if field.help_text %}
+        
+          <div class="text-xs text-slate-500 mt-1">{{ field.help_text }}</div>
+        {% endif %}
+
+        {% if field.errors %}
+          <p class="text-xs text-red-700 mt-1" role="alert">
+            {{ field.errors|striptags }}
+          </p>
+        {% endif %}
+      </div>
+    {% endfor %}
+
+    <button type="submit"
+            class="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg p-3 font-bold">
+      Create account
+    </button>
+  </form>
+
+  <p class="text-sm text-slate-500 mt-4">
+    Already have an account?
+    <a class="text-emerald-700 hover:underline" href="{% url 'accounts:login' %}">Sign in</a>
+  </p>
+
+  <p class="text-xs text-slate-500 mt-2">
+    Want to host an event?
+    <a class="text-emerald-700 hover:underline" href="mailto:organizers@eventgate.sl">
+      Email us
+    </a>
+    and we'll set up your organizer account.
+  </p>
+
+</div>
+{% endblock %}

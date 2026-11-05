@@ -1,0 +1,582 @@
+{% extends "base.html" %}
+
+{% block title %}Secure gate scanner · EventGate{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+
+  <h1 class="text-3xl font-black">Secure gate scanner</h1>
+  <p class="text-slate-600 mt-2">
+    Sign in as the event organiser. Each accepted scan is checked against the
+    server and committed immediately; duplicate scans are rejected.
+  </p>
+
+  {# ---------- LIVE STATS ---------- #}
+  <div class="mt-5 grid grid-cols-2 gap-3">
+    <div class="bg-white border rounded-2xl p-4 shadow-sm">
+      <p class="text-sm font-semibold text-slate-500 uppercase tracking-wide">Scanned Today</p>
+      <p id="stat-today" class="text-4xl font-black text-slate-900 mt-1">{{ today_scanned|default:0 }}</p>
+    </div>
+    <div class="bg-white border rounded-2xl p-4 shadow-sm">
+      <p class="text-sm font-semibold text-slate-500 uppercase tracking-wide">Total Scanned</p>
+      <p id="stat-total" class="text-4xl font-black text-slate-900 mt-1">{{ total_scanned|default:0 }}</p>
+    </div>
+  </div>
+
+  <div class="mt-5 bg-white border rounded-2xl p-5 space-y-4">
+
+    {# ---------- Event selector ---------- #}
+    <div>
+      <label for="event-select" class="block font-bold mb-1">Select event</label>
+      <select id="event-select" class="block border rounded-lg p-3 w-full">
+        <option value="">Choose event</option>
+        {% for event in events %}
+          <option value="{{ event.id }}">{{ event.title }}</option>
+        {% endfor %}
+      </select>
+      {% if not events %}
+        <p class="text-sm text-amber-800 mt-2">
+          You have no events yet.
+          <a href="{% url 'events:event_create' %}" class="underline font-semibold">Create one</a>
+          before using the scanner.
+        </p>
+      {% endif %}
+    </div>
+
+    {# ---------- Camera viewport ---------- #}
+    <div
+      id="reader"
+      class="w-full rounded-lg overflow-hidden bg-slate-900"
+      style="min-height: 240px;"
+      aria-label="Camera preview for QR scanning"
+    ></div>
+
+    {# ---------- Live result ---------- #}
+    <div
+      id="scan-result"
+      class="rounded-xl p-4 bg-slate-100 text-slate-700 text-sm"
+      aria-live="polite"
+      aria-atomic="true"
+      role="status"
+    >
+      <strong class="block">Ready.</strong>
+      <p class="mt-1 text-xs opacity-80">Select an event and tap "Start camera scanner".</p>
+    </div>
+
+    {# ---------- Controls ---------- #}
+    <div class="flex flex-wrap gap-2">
+      <button
+        id="start-scan"
+        type="button"
+        class="flex-1 min-w-[12rem] bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg p-3 font-bold"
+        disabled
+      >
+        Start camera scanner
+      </button>
+      <button
+        id="stop-scan"
+        type="button"
+        class="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg p-3 font-semibold"
+        disabled
+      >
+        Stop
+      </button>
+    </div>
+
+    {# ---------- Manual entry fallback ---------- #}
+    <details class="text-sm">
+      <summary class="cursor-pointer font-semibold text-slate-700">
+        Camera not working? Paste the QR payload JSON instead.
+      </summary>
+      <form id="manual-form" class="mt-3 flex flex-wrap gap-2" autocomplete="off">
+        <input
+          id="manual-payload"
+          type="text"
+          inputmode="text"
+          placeholder='{"v":1,"t":"…","h":"…","kv":1,"s":"…"}'
+          class="flex-1 min-w-[16rem] border rounded-lg p-3 font-mono text-xs"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+        >
+        <button
+          type="submit"
+          class="bg-slate-800 hover:bg-slate-700 text-white rounded-lg px-4 py-3 font-semibold"
+        >
+          Validate
+        </button>
+      </form>
+      <p class="text-xs text-slate-500 mt-2">
+        The raw JSON from the QR image. Manual entries are checked exactly like a camera scan.
+      </p>
+    </details>
+
+    {# ---------- Diagnostics panel (opt-in) ---------- #}
+    <details class="text-sm">
+      <summary class="cursor-pointer font-mono text-xs text-slate-500 hover:text-slate-800">
+        Show diagnostics
+      </summary>
+      <div
+        id="debug-panel"
+        class="mt-2 max-h-72 overflow-y-auto bg-slate-900 text-slate-100 text-[11px] font-mono rounded-lg p-3 whitespace-pre-wrap leading-relaxed"
+      ></div>
+    </details>
+
+  </div>
+
+  {# ---------- RECENT SCANS LOG ---------- #}
+  <div class="mt-6">
+    <h2 class="text-xl font-bold mb-3">Your recent scans</h2>
+    <div class="bg-white border rounded-2xl overflow-hidden">
+      <table class="w-full text-sm text-left">
+        <thead class="bg-slate-100 text-slate-600 font-semibold border-b">
+          <tr>
+            <th class="p-3">Time</th>
+            <th class="p-3">Ticket</th>
+            <th class="p-3">Tier / Buyer</th>
+          </tr>
+        </thead>
+        <tbody id="recent-scans-body" class="divide-y divide-slate-100">
+          {% for t in recent %}
+            <tr class="hover:bg-slate-50">
+              <td class="p-3 text-slate-500 whitespace-nowrap">{{ t.used_at|date:"H:i:s" }}</td>
+              <td class="p-3 font-mono text-xs">{{ t.public_id|slice:":8" }}</td>
+              <td class="p-3">
+                <span class="font-semibold">{{ t.order_item.tier.name }}</span><br>
+                <span class="text-xs text-slate-500">{{ t.owner.get_full_name|default:t.owner.username }}</span>
+              </td>
+            </tr>
+          {% empty %}
+            <tr id="empty-row">
+              <td colspan="3" class="p-6 text-center text-slate-500">No scans yet.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <p class="text-sm text-amber-900 bg-amber-50 border border-amber-200 p-4 rounded-xl mt-4">
+    <strong>Important:</strong> Never rely on a screenshot or visual ticket check.
+    A green success result from the live server is the only valid entry confirmation.
+  </p>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+  "use strict";
+
+  // ---- Element handles ------------------------------------------------
+  const debugPanel  = document.getElementById("debug-panel");
+  const result      = document.getElementById("scan-result");
+  const eventSelect = document.getElementById("event-select");
+  const startBtn    = document.getElementById("start-scan");
+  const stopBtn     = document.getElementById("stop-scan");
+  const manualForm  = document.getElementById("manual-form");
+  const manualInput = document.getElementById("manual-payload");
+  const readerEl    = document.getElementById("reader");
+  
+  // New UI elements
+  const statToday   = document.getElementById("stat-today");
+  const statTotal   = document.getElementById("stat-total");
+  const recentBody  = document.getElementById("recent-scans-body");
+
+  if (!result || !eventSelect || !startBtn || !stopBtn || !manualForm
+      || !manualInput || !readerEl) {
+    console.error("[scanner] required DOM nodes missing");
+    return;
+  }
+
+  const SCAN_URL = "{% url 'tickets:scanner_scan' %}";
+
+  // ---- Debug logging --------------------------------------------------
+  function log(level, msg, data) {
+    const ts = new Date().toISOString().slice(11, 23);
+    const prefix = { info: "ℹ", ok: "✔", warn: "⚠", err: "✖" }[level] || "•";
+    const line = "[" + ts + "] " + prefix + " " + msg
+      + (data !== undefined ? "  " + safeStr(data) : "");
+    const fn = level === "err" ? "error" : level === "warn" ? "warn" : "log";
+    console[fn]("[scanner]", msg, data !== undefined ? redact(data) : "");
+    if (debugPanel) {
+      const div = document.createElement("div");
+      if (level === "err")  div.className = "text-red-300";
+      if (level === "ok")   div.className = "text-emerald-300";
+      if (level === "warn") div.className = "text-amber-300";
+      div.textContent = line;
+      debugPanel.appendChild(div);
+      debugPanel.scrollTop = debugPanel.scrollHeight;
+    }
+  }
+
+  function safeStr(v) {
+    try {
+      if (typeof v === "string") return v;
+      if (v instanceof Error) return v.name + ": " + v.message;
+      return JSON.stringify(v);
+    } catch (_) {
+      return String(v);
+    }
+  }
+
+  function redact(v) {
+    try {
+      if (typeof v === "string") {
+        return v.replace(/"k"\s*:\s*"[^"]+"/g, '"k":"<redacted>"')
+                .replace(/"h"\s*:\s*"[^"]+"/g, '"h":"<redacted>"');
+      }
+    } catch (_) {}
+    return v;
+  }
+
+  // ---- State ---------------------------------------------------------
+  let scanner = null;
+  let inflight = 0;
+  let isScanning = false;
+  let scanCooldownUntil = 0;
+  let lastRaw = "";
+  let lastResultTimer = null;
+
+  const RESULT_CLASSES = {
+    idle: "rounded-xl p-4 bg-slate-100 text-slate-700 text-sm",
+    busy: "rounded-xl p-4 bg-indigo-100 text-indigo-900 text-sm animate-pulse",
+    ok:   "rounded-xl p-4 bg-emerald-100 text-emerald-900 text-sm",
+    err:  "rounded-xl p-4 bg-red-100 text-red-900 text-sm",
+  };
+
+  const deviceId = (() => {
+    try {
+      let id = sessionStorage.getItem("eventgate-device");
+      if (!id) {
+        id = (window.crypto && crypto.randomUUID && crypto.randomUUID())
+          || ("dev-" + Date.now() + "-" + Math.random().toString(36).slice(2, 10));
+        sessionStorage.setItem("eventgate-device", id);
+        log("ok", "deviceId created");
+      } else {
+        log("info", "deviceId restored");
+      }
+      return id;
+    } catch (e) {
+      log("warn", "sessionStorage unavailable — using ephemeral id");
+      return "dev-fallback-" + Date.now();
+    }
+  })();
+
+  function getCookie(name) {
+    const m = document.cookie.match(new RegExp("(^|; )" + name + "=([^;]*)")); 
+    return m ? decodeURIComponent(m[2]) : "";
+  }
+
+  function setResult(kind, message, extra) {
+    if (lastResultTimer) { clearTimeout(lastResultTimer); lastResultTimer = null; }
+    result.className = RESULT_CLASSES[kind] || RESULT_CLASSES.idle;
+    const frag = document.createDocumentFragment();
+    const strong = document.createElement("strong");
+    strong.className = "block";
+    strong.textContent = message;
+    frag.appendChild(strong);
+    (extra || []).forEach(function (line) {
+      const p = document.createElement("p");
+      p.className = "mt-1 text-xs opacity-80";
+      p.textContent = line;
+      frag.appendChild(p);
+    });
+    result.replaceChildren(frag);
+
+    if (kind === "ok") {
+      lastResultTimer = setTimeout(function () {
+        setResult("idle", "Camera active. Scan an EventGate ticket.");
+      }, 4000);
+    }
+  }
+
+  function setScanButtons(scanning) {
+    isScanning = scanning;
+    startBtn.disabled = scanning || !eventSelect.value;
+    stopBtn.disabled  = !scanning;
+    eventSelect.disabled = scanning;
+    if (!scanning) startBtn.disabled = !eventSelect.value;
+  }
+
+  function vibrate(pattern) {
+    if (navigator.vibrate) { try { navigator.vibrate(pattern); } catch (_) {} }
+  }
+
+  async function cameraPermissionState() {
+    if (!navigator.permissions || !navigator.permissions.query) return "unknown";
+    try {
+      const s = await navigator.permissions.query({ name: "camera" });
+      return s.state;
+    } catch (_) {
+      return "unknown";
+    }
+  }
+
+  async function submitScan(rawQrString) {
+    const csrf = getCookie("csrftoken");
+    if (!csrf) throw new Error("Missing CSRF token — refresh the page and try again.");
+
+    log("info", "POST " + SCAN_URL, { bytes: rawQrString.length });
+
+    const response = await fetch(SCAN_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": csrf,
+        "X-Requested-With": "XMLHttpRequest",
+      },
+      body: JSON.stringify({
+        qr: rawQrString,
+        event: eventSelect.value,
+        device_id: deviceId,
+      }),
+      credentials: "same-origin",
+    });
+
+    const contentType = response.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+      throw new Error(
+        "Server returned HTML instead of JSON — your session may have expired."
+      );
+    }
+
+    const data = await response.json().catch(function () { return {}; });
+    log("info", "response", { status: response.status, code: data.code });
+
+    if (!response.ok && !data.message) {
+      throw new Error("Server rejected the scan (" + response.status + ").");
+    }
+    return data;
+  }
+
+  // ---- DOM Updating Logic ---------------------------------------------
+  function updateStats(data) {
+    if (!data.ticket || !data.ticket.public_id) return;
+
+    // 1. Update Numbers
+    if (statToday) statToday.textContent = (parseInt(statToday.textContent, 10) || 0) + 1;
+    if (statTotal) statTotal.textContent = (parseInt(statTotal.textContent, 10) || 0) + 1;
+
+    // 2. Insert into the Recent Scans table
+    if (recentBody) {
+      const emptyRow = document.getElementById("empty-row");
+      if (emptyRow) emptyRow.remove();
+
+      const tr = document.createElement("tr");
+      tr.className = "hover:bg-slate-50 bg-emerald-50 transition-colors duration-1000";
+      
+      // Date/Time
+      const tdTime = document.createElement("td");
+      tdTime.className = "p-3 text-slate-500 whitespace-nowrap";
+      const now = new Date();
+      tdTime.textContent = now.toTimeString().split(" ")[0]; // HH:MM:SS
+
+      // Ticket ID
+      const tdId = document.createElement("td");
+      tdId.className = "p-3 font-mono text-xs";
+      tdId.textContent = data.ticket.public_id.slice(0, 8);
+
+      // Details (Tier / Buyer)
+      const tdDetails = document.createElement("td");
+      tdDetails.className = "p-3";
+      
+      const tierSpan = document.createElement("span");
+      tierSpan.className = "font-semibold";
+      tierSpan.textContent = data.ticket.tier || "Ticket";
+      
+      const br = document.createElement("br");
+      
+      const buyerSpan = document.createElement("span");
+      buyerSpan.className = "text-xs text-slate-500";
+      buyerSpan.textContent = data.ticket.owner || "Unknown"; 
+
+      tdDetails.appendChild(tierSpan);
+      tdDetails.appendChild(br);
+      tdDetails.appendChild(buyerSpan);
+
+      tr.appendChild(tdTime);
+      tr.appendChild(tdId);
+      tr.appendChild(tdDetails);
+
+      // Add to top of table
+      recentBody.insertBefore(tr, recentBody.firstChild);
+
+      // Fade out the green background highlight
+      setTimeout(() => {
+        tr.classList.remove("bg-emerald-50");
+      }, 2000);
+    }
+  }
+
+    function renderOutcome(data) {
+    if (data.ok) {
+      const extra = [];
+      if (data.event) extra.push("Event: " + data.event);
+      if (data.ticket && data.ticket.tier) {
+          extra.push("Tier: " + data.ticket.tier);
+      }
+      
+      // 🟢 FORCE THE GREEN "TICKET IS VALID" HEADLINE
+      setResult("ok", "✓ Ticket is Valid", extra);
+      vibrate(100);
+      
+      // Update the UI stats immediately
+      updateStats(data);
+
+    } else {
+      const extra = [];
+      if (data.scanned_at) extra.push("Originally scanned: " + data.scanned_at);
+      
+      // 🔴 FORCE THE RED "ENTRY DENIED" HEADLINE
+      setResult("err", "✕ Entry Denied — " + (data.message || "Invalid Ticket"), extra);
+      vibrate([150, 70, 150]);
+    }
+  }
+
+  async function onScan(rawText) {
+    if (!isScanning) return;
+    if (rawText === lastRaw && Date.now() < scanCooldownUntil) return;
+    if (inflight > 0) {
+      setResult("err", "Please wait — the previous ticket is still being checked.");
+      return;
+    }
+
+    lastRaw = rawText;
+    scanCooldownUntil = Date.now() + 1500;
+    inflight++;
+    setResult("busy", "Checking ticket…");
+    log("info", "scan frame received", { length: rawText.length });
+
+    try {
+      renderOutcome(await submitScan(rawText));
+    } catch (err) {
+      log("err", "scan failed", err && err.message);
+      setResult("err", err.message || "Could not validate the ticket.");
+      vibrate([150, 70, 150]);
+    } finally {
+      inflight--;
+    }
+  }
+
+  // ---- Start ----------------------------------------------------------
+  startBtn.addEventListener("click", async function () {
+    log("info", "start clicked", { event: eventSelect.value || "(empty)" });
+
+    if (!eventSelect.value) {
+      setResult("err", "Select an event first.");
+      return;
+    }
+    if (typeof window.Html5Qrcode !== "function") {
+      setResult("err", "Scanner library did not load. Check your connection and refresh.");
+      return;
+    }
+    if (!window.isSecureContext) {
+      setResult("err", "Camera needs a secure context (HTTPS or localhost).");
+      return;
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setResult("err", "This browser does not support camera access.");
+      return;
+    }
+    const perm = await cameraPermissionState();
+    if (perm === "denied") {
+      setResult("err", "Camera permission is blocked. Allow it in your browser settings.");
+      return;
+    }
+
+    try {
+      scanner = new Html5Qrcode("reader");
+      await new Promise(function (r) { requestAnimationFrame(function () { requestAnimationFrame(r); }); });
+      const box = Math.max(160, Math.min(250, (readerEl.clientWidth || 260) - 20));
+
+      let started = false;
+
+      try {
+        await scanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: box, height: box } },
+          onScan, function () {}
+        );
+        started = true;
+      } catch (err1) {
+        if (err1 && (err1.name === "NotAllowedError" || err1.name === "SecurityError")) throw err1;
+        const cameras = await Html5Qrcode.getCameras().catch(function () { return []; });
+        if (!cameras || !cameras.length) throw new Error("No camera found on this device.");
+        const rear = cameras.find(function (c) { return /back|rear|environment/i.test(c.label || ""); });
+        const chosen = rear || cameras[0];
+        await scanner.start(
+          chosen.id,
+          { fps: 10, qrbox: { width: box, height: box } },
+          onScan, function () {}
+        );
+        started = true;
+      }
+
+      if (started) {
+        setScanButtons(true);
+        setResult("idle", "Camera active. Scan an EventGate ticket.");
+      }
+    } catch (err) {
+      log("err", "camera start failed", { name: err && err.name, message: err && err.message });
+      setResult("err", "Camera could not start. " + ((err && err.message) || ""));
+      await stopScanner();
+    }
+  });
+
+  // ---- Stop -----------------------------------------------------------
+  async function stopScanner() {
+    if (!scanner) return;
+    try { await scanner.stop();  } catch (_) {}
+    try { await scanner.clear(); } catch (_) {}
+    scanner = null;
+    setScanButtons(false);
+  }
+
+  stopBtn.addEventListener("click", async function () {
+    await stopScanner();
+    setResult("idle", "Scanner stopped.");
+  });
+
+  window.addEventListener("beforeunload", function () {
+    if (scanner) { try { scanner.stop(); } catch (_) {} }
+  });
+
+  // ---- Manual entry ---------------------------------------------------
+  manualForm.addEventListener("submit", async function (e) {
+    e.preventDefault();
+    if (!eventSelect.value) {
+      setResult("err", "Select an event first.");
+      return;
+    }
+    const raw = manualInput.value.trim();
+    if (!raw) return;
+    manualInput.value = ""; 
+    inflight++;
+    setResult("busy", "Checking ticket…");
+    try {
+      renderOutcome(await submitScan(raw));
+    } catch (err) {
+      log("err", "manual failed", err && err.message);
+      setResult("err", err.message || "Could not validate the ticket.");
+    } finally {
+      inflight--;
+    }
+  });
+
+  // ---- Initial button state -------------------------------------------
+  eventSelect.addEventListener("change", function () {
+    if (!isScanning) startBtn.disabled = !eventSelect.value;
+  });
+  setScanButtons(false);
+
+  if (!window.isSecureContext) {
+    setResult("err", "Camera requires HTTPS. Use http://localhost or http://127.0.0.1.");
+    startBtn.disabled = true;
+  }
+
+  log("info", "=== scanner page loaded ===");
+})();
+</script>
+{% endblock %}

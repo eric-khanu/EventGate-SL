@@ -1,0 +1,430 @@
+{% extends "base.html" %}
+
+{% block title %}{{ ticket.event.title }} · EventGate Ticket{% endblock %}
+
+{% block content %}
+<style>
+  .tp-page {
+    padding: 2rem 1rem;
+    background: #f1f5f9;
+    min-height: 70vh;
+  }
+
+  .tp-shell {
+    max-width: 44rem;
+    margin: 0 auto;
+    padding: 2rem;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 1.25rem;
+    box-shadow: 0 15px 40px rgba(15, 23, 42, .08);
+  }
+
+  .tp-header {
+    text-align: center;
+  }
+
+  .tp-brand {
+    color: #047857;
+    font-size: .75rem;
+    font-weight: 800;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+  }
+
+  .tp-title {
+    margin-top: .75rem;
+    color: #0f172a;
+    font-size: clamp(1.5rem, 4vw, 2.25rem);
+    font-weight: 900;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+
+  .tp-meta {
+    margin-top: .5rem;
+    color: #64748b;
+    font-size: .95rem;
+  }
+
+  /* QR CODE */
+
+  .tp-qr-wrap {
+    margin-top: 2rem;
+    text-align: center;
+  }
+
+  .tp-qr {
+    display: block;
+    width: 30rem;
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto;
+    padding: 1rem;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, .08);
+    image-rendering: pixelated;
+  }
+
+  .tp-qr-hint {
+    margin-top: 1rem;
+    color: #64748b;
+    font-size: .85rem;
+  }
+
+  .tp-download {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: .7rem 1.2rem;
+    border-radius: .65rem;
+    background: #ecfdf5;
+    color: #047857;
+    font-weight: 800;
+    text-decoration: none;
+  }
+
+  .tp-download:hover {
+    background: #d1fae5;
+  }
+
+  /* STATUS */
+
+  .tp-status {
+    margin-top: 1.5rem;
+    padding: 1.25rem;
+    border-radius: .75rem;
+    text-align: center;
+  }
+
+  .tp-status--used {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    color: #334155;
+  }
+
+  .tp-status--void {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+  }
+
+  .tp-status--na {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+  }
+
+  .tp-status__title {
+    font-size: 1.25rem;
+    font-weight: 900;
+  }
+
+  .tp-status__text {
+    margin-top: .4rem;
+    font-size: .85rem;
+  }
+
+  /* REFERENCE */
+
+  .tp-ref {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: .75rem;
+    text-align: center;
+  }
+
+  .tp-ref__label {
+    color: #64748b;
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .tp-ref__value {
+    margin-top: .4rem;
+    color: #334155;
+    font-family: monospace;
+    font-size: .85rem;
+    overflow-wrap: anywhere;
+  }
+
+  .tp-ref__status {
+    margin-top: .5rem;
+    font-weight: 800;
+  }
+
+  .tp-ref__status--valid { color: #047857; }
+  .tp-ref__status--used  { color: #475569; }
+  .tp-ref__status--void  { color: #b91c1c; }
+
+  /* ACTIONS */
+
+  .tp-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: .75rem;
+    margin-top: 1.75rem;
+  }
+
+  .tp-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: .75rem 1.25rem;
+    border-radius: .65rem;
+    font-size: .9rem;
+    font-weight: 800;
+    text-decoration: none;
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+
+  .tp-btn--primary {
+    background: #0f172a;
+    color: #fff;
+  }
+
+  .tp-btn--primary:hover {
+    background: #1e293b;
+  }
+
+  .tp-btn--ghost {
+    background: #e2e8f0;
+    color: #0f172a;
+  }
+
+  .tp-btn--ghost:hover {
+    background: #cbd5e1;
+  }
+
+  .tp-btn:focus-visible,
+  .tp-download:focus-visible {
+    outline: 3px solid #10b981;
+    outline-offset: 3px;
+  }
+
+  /* MOBILE */
+
+  @media (max-width: 640px) {
+    .tp-page {
+      padding: 1rem .5rem;
+    }
+
+    .tp-shell {
+      padding: 1.25rem;
+      border-radius: .9rem;
+    }
+
+    .tp-qr {
+      width: 100%;
+      padding: .5rem;
+    }
+
+    .tp-actions {
+      flex-direction: column;
+    }
+
+    .tp-btn {
+      width: 100%;
+    }
+  }
+
+  /* PRINT */
+
+  @media print {
+    @page {
+      margin: 10mm;
+    }
+
+    body,
+    .tp-page {
+      background: #fff !important;
+    }
+
+    .tp-page {
+      padding: 0;
+    }
+
+    .tp-shell {
+      max-width: 100%;
+      padding: 0;
+      border: none;
+      box-shadow: none;
+    }
+
+    .tp-actions,
+    .tp-download {
+      display: none !important;
+    }
+
+    .tp-qr {
+      width: 30rem;
+      max-width: 100%;
+      border: none;
+      box-shadow: none;
+    }
+  }
+</style>
+
+<div class="tp-page">
+  <article class="tp-shell">
+
+    <!-- Event information -->
+    <header class="tp-header">
+
+      <p class="tp-brand">EventGate · Entry Ticket</p>
+
+      <h1 class="tp-title">
+        {{ ticket.event.title }}
+      </h1>
+
+      <p class="tp-meta">
+        {{ ticket.event.starts_at|date:'l, d F Y · g:i A' }}
+      </p>
+
+      <p class="tp-meta">
+        📍 {{ ticket.event.venue }}
+      </p>
+
+    </header>
+
+    <!-- QR CODE -->
+    {% if ticket.status == 'valid' and qr %}
+
+      <section class="tp-qr-wrap">
+
+        <img
+          id="ticket-qr"
+          class="tp-qr"
+          src="{{ qr }}"
+          alt="EventGate entry QR code"
+        >
+
+        <p class="tp-qr-hint">
+          Present your QR code at the entrance.
+        </p>
+
+        
+
+      </section>
+
+    {% elif ticket.status == 'used' %}
+
+      <section class="tp-status tp-status--used">
+
+        <h2 class="tp-status__title">
+          ✓ Ticket Used
+        </h2>
+
+        <p class="tp-status__text">
+          This ticket has already been scanned
+          {% if ticket.scanned_at %}
+            on {{ ticket.scanned_at|date:'d M Y · g:i A' }}
+          {% endif %}.
+        </p>
+
+      </section>
+
+    {% elif ticket.status == 'void' %}
+
+      <section class="tp-status tp-status--void">
+
+        <h2 class="tp-status__title">
+          ✕ Ticket Voided
+        </h2>
+
+        <p class="tp-status__text">
+          This ticket is no longer valid.
+        </p>
+
+      </section>
+
+    {% else %}
+
+      <section class="tp-status tp-status--na">
+
+        <h2 class="tp-status__title">
+          QR Unavailable
+        </h2>
+
+        <p class="tp-status__text">
+          Please contact the event organiser.
+        </p>
+
+      </section>
+
+    {% endif %}
+
+    <!-- Ticket reference -->
+    <section class="tp-ref">
+
+      <p class="tp-ref__label">
+        Ticket Reference
+      </p>
+
+      <p class="tp-ref__value">
+        {{ ticket.public_id|slice:":8" }}…{{ ticket.public_id|slice:"-4:" }}
+      </p>
+
+      <p class="tp-ref__label" style="margin-top: 1rem;">
+        Ticket Status
+      </p>
+
+      <p class="tp-ref__status
+        {% if ticket.status == 'valid' %}
+          tp-ref__status--valid
+        {% elif ticket.status == 'used' %}
+          tp-ref__status--used
+        {% elif ticket.status == 'void' %}
+          tp-ref__status--void
+        {% endif %}">
+        {{ ticket.get_status_display }}
+      </p>
+
+    </section>
+
+    <!-- Actions -->
+    <div class="tp-actions">
+
+      <button
+        id="print-ticket"
+        type="button"
+        class="tp-btn tp-btn--primary"
+      >
+        Print / Save as PDF
+      </button>
+
+      <a
+        href="{% url 'tickets:my_orders' %}"
+        class="tp-btn tp-btn--ghost"
+      >
+        ← My Tickets
+      </a>
+
+    </div>
+
+  </article>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  (() => {
+    "use strict";
+
+    const printButton = document.getElementById("print-ticket");
+
+    if (printButton) {
+      printButton.addEventListener("click", () => {
+        window.print();
+      });
+    }
+  })();
+</script>
+{% endblock %}

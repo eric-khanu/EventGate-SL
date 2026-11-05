@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#0f172a;">
+  <div style="max-width:560px;margin:24px auto;background:#ffffff;border-radius:16px;padding:32px;border:1px solid #e2e8f0;">
+
+    <p style="margin:0 0 8px 0;color:#047857;text-transform:uppercase;font-weight:700;letter-spacing:0.08em;font-size:12px;">
+      Digital entry ticket
+    </p>
+
+    <h1 style="margin:0 0 4px 0;font-size:24px;color:#0f172a;">
+      {{ event.title }}
+    </h1>
+    <p style="margin:0 0 4px 0;color:#475569;">
+      {{ event.starts_at|date:"l, d F Y · g:i A" }}
+    </p>
+    <p style="margin:0;color:#475569;">
+      📍 {{ event.venue }}{% if event.district %}, {{ event.district }}{% endif %}
+    </p>
+
+    <div style="text-align:center;margin:24px 0;">
+      <a href="{{ ticket_url }}"
+         style="display:inline-block;background:#059669;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;">
+        Open your ticket
+      </a>
+    </div>
+
+    <p style="margin:0 0 8px 0;font-size:14px;color:#475569;">
+      Your QR code is attached to this email as a PNG and is also available
+      inside your EventGate account.
+    </p>
+
+    <table style="width:100%;border-collapse:collapse;margin-top:16px;font-size:14px;">
+      <tr>
+        <td style="padding:8px 0;color:#64748b;">Tier</td>
+        <td style="padding:8px 0;text-align:right;color:#0f172a;">
+          {{ ticket.order_item.tier.name }}
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#64748b;border-top:1px solid #e2e8f0;">Ticket</td>
+        <td style="padding:8px 0;text-align:right;color:#0f172a;border-top:1px solid #e2e8f0;font-family:monospace;">
+          {{ ticket.public_id }}
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#64748b;border-top:1px solid #e2e8f0;">Order</td>
+        <td style="padding:8px 0;text-align:right;color:#0f172a;border-top:1px solid #e2e8f0;font-family:monospace;">
+          {{ order.reference }}
+        </td>
+      </tr>
+    </table>
+
+    <div style="margin-top:24px;padding:16px;background:#fffbeb;border:1px solid #fde68a;border-radius:12px;font-size:13px;color:#92400e;">
+      <strong>Keep this QR private.</strong>
+      Anyone who copies this code can enter as you. Each ticket is valid for a
+      single scan at the gate.
+    </div>
+
+    <p style="margin:24px 0 0 0;font-size:12px;color:#94a3b8;text-align:center;">
+      Sent by EventGate ·
+      <a href="{{ site_url }}" style="color:#059669;text-decoration:none;">{{ site_url }}</a>
+    </p>
+  </div>
+</body>
+</html>

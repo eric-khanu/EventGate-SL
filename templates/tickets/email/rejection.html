@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#0f172a;">
+  <div style="max-width:560px;margin:24px auto;background:#ffffff;border-radius:16px;padding:32px;border:1px solid #e2e8f0;">
+
+    <h1 style="margin:0 0 8px 0;font-size:22px;">
+      Payment could not be verified
+    </h1>
+    <p style="margin:0;color:#475569;">
+      Order {{ order.reference }} for <strong>{{ event_title }}</strong>.
+    </p>
+
+    <table style="width:100%;border-collapse:collapse;margin-top:20px;font-size:14px;">
+      <tr>
+        <td style="padding:8px 0;color:#64748b;">Total</td>
+        <td style="padding:8px 0;text-align:right;">
+          {{ order.currency }} {{ order.total }}
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#64748b;border-top:1px solid #e2e8f0;">Method</td>
+        <td style="padding:8px 0;text-align:right;border-top:1px solid #e2e8f0;">
+          {{ order.get_payment_method_display }}
+        </td>
+      </tr>
+      {% if order.payment_reference %}
+        <tr>
+          <td style="padding:8px 0;color:#64748b;border-top:1px solid #e2e8f0;">Reference</td>
+          <td style="padding:8px 0;text-align:right;border-top:1px solid #e2e8f0;font-family:monospace;">
+            {{ order.payment_reference }}
+          </td>
+        </tr>
+      {% endif %}
+    </table>
+
+    <div style="margin-top:20px;padding:16px;background:#fef2f2;border:1px solid #fecaca;border-radius:12px;font-size:14px;color:#991b1b;">
+      <strong>No tickets were issued for this order.</strong>
+      If you believe this is a mistake, reply to this email with a clear
+      screenshot or receipt of your payment.
+    </div>
+
+    <div style="text-align:center;margin:24px 0 0 0;">
+      <a href="{{ my_orders_url }}"
+         style="display:inline-block;background:#0f172a;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;">
+        View your orders
+      </a>
+    </div>
+
+    <p style="margin:24px 0 0 0;font-size:12px;color:#94a3b8;text-align:center;">
+      Sent by EventGate ·
+      <a href="{{ site_url }}" style="color:#059669;text-decoration:none;">{{ site_url }}</a>
+    </p>
+  </div>
+</body>
+</html>

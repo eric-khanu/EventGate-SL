@@ -1,0 +1,340 @@
+
+{% extends "base.html" %}
+
+{% block title %}Checkout · EventGate{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 py-8">
+
+  <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 sm:p-8">
+
+    <!-- Header -->
+    <div class="mb-6">
+      <span class="inline-flex items-center px-3 py-1 rounded-full
+                   bg-emerald-50 text-emerald-700 text-xs font-semibold">
+        Secure Ticket Checkout
+      </span>
+
+      <h1 class="text-3xl sm:text-4xl font-black text-slate-900 mt-3">
+        Order your tickets
+      </h1>
+
+      <p class="text-slate-600 mt-2">
+        Complete the form below to reserve your tickets.
+      </p>
+    </div>
+
+    <!-- Event Summary -->
+    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6">
+      <h2 class="font-bold text-lg text-slate-900">
+        {{ tier.event.title }}
+      </h2>
+
+      <div class="flex flex-wrap items-center gap-2 mt-2 text-sm text-slate-600">
+        <span>{{ tier.name }}</span>
+        <span aria-hidden="true">·</span>
+
+        <span class="font-semibold text-slate-900">
+          {{ tier.event.currency }} {{ tier.current_price }} each
+        </span>
+      </div>
+
+      {% if tier.remaining < 10 %}
+        <p class="mt-3 text-sm font-semibold text-amber-700">
+          Only {{ tier.remaining }} ticket{{ tier.remaining|pluralize }} remaining!
+        </p>
+      {% endif %}
+    </div>
+
+    <!-- Django Messages -->
+    {% if messages %}
+      <div class="space-y-3 mb-6" aria-live="polite">
+        {% for message in messages %}
+          <div class="p-4 rounded-lg border text-sm
+            {% if 'error' in message.tags %}
+              bg-red-50 text-red-800 border-red-200
+            {% elif 'warning' in message.tags %}
+              bg-amber-50 text-amber-800 border-amber-200
+            {% elif 'success' in message.tags %}
+              bg-emerald-50 text-emerald-800 border-emerald-200
+            {% else %}
+              bg-slate-50 text-slate-800 border-slate-200
+            {% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- Non-field Errors -->
+    {% if form.non_field_errors %}
+      <div class="bg-red-50 border border-red-200 text-red-800
+                  rounded-lg p-4 mb-6 text-sm"
+           role="alert">
+        {% for error in form.non_field_errors %}
+          <p>{{ error }}</p>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- Checkout Form -->
+    <form method="post"
+          enctype="multipart/form-data"
+          class="space-y-5"
+          novalidate>
+
+      {% csrf_token %}
+
+      <!-- Quantity -->
+      <div>
+        <label for="{{ form.quantity.id_for_label }}"
+               class="block text-sm font-semibold text-slate-800 mb-2">
+          Number of tickets
+        </label>
+
+        <select
+          id="{{ form.quantity.id_for_label }}"
+          name="{{ form.quantity.html_name }}"
+          class="w-full rounded-lg border border-slate-300 bg-white
+                 p-3 text-slate-900
+                 focus:outline-none focus:ring-2 focus:ring-emerald-500
+                 focus:border-emerald-500
+                 {% if form.quantity.errors %}border-red-500{% endif %}"
+          {% if form.quantity.errors %}
+            aria-invalid="true"
+            aria-describedby="quantity-errors"
+          {% endif %}>
+
+          {% with max_qty=form.quantity.field.max_value|default:10 %}
+            {% for n in "123456789"|make_list %}
+              {% if forloop.counter <= max_qty %}
+                <option value="{{ forloop.counter }}"
+                  {% if form.quantity.value|stringformat:"s" == forloop.counter|stringformat:"s" %}
+                    selected
+                  {% endif %}>
+                  {{ forloop.counter }}
+                </option>
+              {% endif %}
+            {% endfor %}
+
+            {% if max_qty >= 10 %}
+              <option value="10"
+                {% if form.quantity.value|stringformat:"s" == "10" %}
+                  selected
+                {% endif %}>
+                10
+              </option>
+            {% endif %}
+          {% endwith %}
+        </select>
+
+        {% if form.quantity.errors %}
+          <div id="quantity-errors" class="text-red-700 text-sm mt-2">
+            {{ form.quantity.errors }}
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Email -->
+      <div>
+        <label for="{{ form.email.id_for_label }}"
+               class="block text-sm font-semibold text-slate-800 mb-2">
+          Email address <span class="text-red-600">*</span>
+        </label>
+
+        <input
+          required
+          type="email"
+          id="{{ form.email.id_for_label }}"
+          name="{{ form.email.html_name }}"
+          value="{% if form.is_bound %}{{ form.email.value|default_if_none:'' }}{% else %}{{ form.email.value|default:user.email }}{% endif %}"
+          placeholder="you@example.com"
+          autocomplete="email"
+          class="w-full rounded-lg border border-slate-300
+                 p-3 focus:outline-none focus:ring-2
+                 focus:ring-emerald-500 focus:border-emerald-500
+                 {% if form.email.errors %}border-red-500{% endif %}"
+          {% if form.email.errors %}
+            aria-invalid="true"
+            aria-describedby="email-errors"
+          {% endif %}>
+
+        {% if form.email.errors %}
+          <div id="email-errors" class="text-red-700 text-sm mt-2">
+            {{ form.email.errors }}
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Phone -->
+      <div>
+        <label for="{{ form.phone.id_for_label }}"
+               class="block text-sm font-semibold text-slate-800 mb-2">
+          Phone number <span class="text-red-600">*</span>
+        </label>
+
+        <input
+          required
+          type="tel"
+          id="{{ form.phone.id_for_label }}"
+          name="{{ form.phone.html_name }}"
+          value="{{ form.phone.value|default_if_none:'' }}"
+          placeholder="+232 XX XXX XXX"
+          autocomplete="tel"
+          inputmode="tel"
+          class="w-full rounded-lg border border-slate-300
+                 p-3 focus:outline-none focus:ring-2
+                 focus:ring-emerald-500 focus:border-emerald-500
+                 {% if form.phone.errors %}border-red-500{% endif %}"
+          {% if form.phone.errors %}
+            aria-invalid="true"
+            aria-describedby="phone-errors"
+          {% endif %}>
+
+        {% if form.phone.errors %}
+          <div id="phone-errors" class="text-red-700 text-sm mt-2">
+            {{ form.phone.errors }}
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Payment Method -->
+      <div>
+        <label for="{{ form.payment_method.id_for_label }}"
+               class="block text-sm font-semibold text-slate-800 mb-2">
+          Payment method <span class="text-red-600">*</span>
+        </label>
+
+        {{ form.payment_method }}
+
+        {% if form.payment_method.errors %}
+          <div class="text-red-700 text-sm mt-2">
+            {{ form.payment_method.errors }}
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Payment Reference -->
+      <div>
+        <label for="{{ form.payment_reference.id_for_label }}"
+               class="block text-sm font-semibold text-slate-800 mb-2">
+          Payment reference
+          <span class="text-slate-500 font-normal">(optional)</span>
+        </label>
+
+        <input
+          type="text"
+          id="{{ form.payment_reference.id_for_label }}"
+          name="{{ form.payment_reference.html_name }}"
+          value="{{ form.payment_reference.value|default_if_none:'' }}"
+          placeholder="Orange Money, Afrimoney, or bank transaction ID"
+          class="w-full rounded-lg border border-slate-300
+                 p-3 focus:outline-none focus:ring-2
+                 focus:ring-emerald-500 focus:border-emerald-500
+                 {% if form.payment_reference.errors %}border-red-500{% endif %}">
+
+        {% if form.payment_reference.errors %}
+          <div class="text-red-700 text-sm mt-2">
+            {{ form.payment_reference.errors }}
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Payment Proof -->
+      <div>
+        <label for="{{ form.payment_proof.id_for_label }}"
+               class="block text-sm font-semibold text-slate-800 mb-2">
+          Payment receipt or screenshot
+          <span class="text-slate-500 font-normal">(optional)</span>
+        </label>
+
+        {{ form.payment_proof }}
+
+        <p class="text-xs text-slate-500 mt-2">
+          Accepted formats: JPG, PNG, WebP, or PDF. Maximum size: 5 MB.
+        </p>
+
+        <p class="text-xs text-slate-500 mt-1">
+          Payment proof is accessible only to authorized event organisers
+          and EventGate staff.
+        </p>
+
+        {% if form.payment_proof.errors %}
+          <div class="text-red-700 text-sm mt-2">
+            {{ form.payment_proof.errors }}
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Payment Note -->
+      <div>
+        <label for="{{ form.payment_note.id_for_label }}"
+               class="block text-sm font-semibold text-slate-800 mb-2">
+          Additional payment information
+          <span class="text-slate-500 font-normal">(optional)</span>
+        </label>
+
+        <textarea
+          id="{{ form.payment_note.id_for_label }}"
+          name="{{ form.payment_note.html_name }}"
+          rows="3"
+          placeholder="Sender name, transaction details, or other relevant information"
+          class="w-full rounded-lg border border-slate-300
+                 p-3 focus:outline-none focus:ring-2
+                 focus:ring-emerald-500 focus:border-emerald-500
+                 {% if form.payment_note.errors %}border-red-500{% endif %}">{{ form.payment_note.value|default_if_none:'' }}</textarea>
+
+        {% if form.payment_note.errors %}
+          <div class="text-red-700 text-sm mt-2">
+            {{ form.payment_note.errors }}
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Payment Information -->
+      <div class="bg-amber-50 border border-amber-200
+                  rounded-xl p-4 text-sm text-amber-900">
+
+        <h3 class="font-bold mb-2">
+          Important information
+        </h3>
+
+        <ul class="list-disc list-inside space-y-2">
+          <li>
+            Your tickets will be issued after the organiser verifies
+            your payment.
+          </li>
+          <li>
+            Never share your mobile money PIN, wallet password,
+            or banking credentials.
+          </li>
+          <li>
+            Ensure your email address and phone number are correct.
+            Your ticket QR codes will be delivered using your
+            registered contact details.
+          </li>
+        </ul>
+      </div>
+
+      <!-- Submit -->
+      <button
+        type="submit"
+        class="w-full bg-emerald-600 hover:bg-emerald-700
+               active:bg-emerald-800 text-white font-bold
+               py-4 px-6 rounded-xl transition duration-200
+               focus:outline-none focus:ring-4
+               focus:ring-emerald-200">
+
+        Submit ticket order
+      </button>
+
+      <p class="text-xs text-center text-slate-500">
+        Powered by EventGate · Secure event ticketing
+      </p>
+
+    </form>
+
+  </div>
+
+</div>
+{% endblock %}

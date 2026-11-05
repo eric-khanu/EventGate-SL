@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Events in Sierra Leone · EventGate{% endblock %}
+
+{% block content %}
+
+{# ---------- Hero ---------- #}
+<section class="rounded-3xl bg-slate-900 text-white p-8 md:p-14 mb-8">
+  <p class="uppercase tracking-widest text-emerald-300 text-sm">
+    Discover · Book · Check in
+  </p>
+  <h1 class="text-4xl md:text-5xl font-black mt-3">
+    Your next great event starts here.
+  </h1>
+  <p class="mt-4 text-slate-300 max-w-2xl">
+    Find concerts, conferences, parties, festivals and community events across Sierra Leone.
+  </p>
+
+  <form method="get" action="{% url 'home' %}" class="mt-6 grid md:grid-cols-4 gap-3">
+    <input
+      type="text"
+      name="q"
+      placeholder="Event, venue or place"
+      value="{{ q }}"
+      class="p-3 rounded-lg text-slate-900 bg-white border border-slate-300"
+    >
+    <input
+      type="text"
+      name="district"
+      placeholder="District"
+      value="{{ district }}"
+      class="p-3 rounded-lg text-slate-900 bg-white border border-slate-300"
+    >
+    <input
+      type="text"
+      name="category"
+      placeholder="Category"
+      value="{{ category }}"
+      class="p-3 rounded-lg text-slate-900 bg-white border border-slate-300"
+    >
+    <button
+      type="submit"
+      class="rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold p-3"
+    >
+      Search events
+    </button>
+  </form>
+</section>
+
+{# ---------- Upcoming events header ---------- #}
+<div class="flex justify-between items-center mb-5">
+  <h2 class="text-2xl font-bold">Upcoming events</h2>
+</div>
+
+{# ---------- Main content: event grid + sticky sidebar ---------- #}
+<div class="{% if active_sidebar_ads %}home-layout{% endif %}">
+
+  {# ---------- Event grid ---------- #}
+  <div class="event-grid">
+    {% for event in events %}
+
+      <a href="{{ event.get_absolute_url }}" class="event-card" aria-label="{{ event.title }} — {{ event.starts_at|date:'d M Y' }}">
+
+        {% if event.cover_image %}
+          <img src="{{ event.cover_image.url }}" alt="{{ event.title }}" loading="lazy">
+        {% else %}
+          <div style="height: 12rem; display: flex; align-items: center; justify-content: center; font-size: 3rem; background: linear-gradient(135deg, #a7f3d0, #c7d2fe);">
+            🎟️
+          </div>
+        {% endif %}
+
+        <div class="event-info">
+
+          <p class="event-category">{{ event.category|default:"Event" }} · {{ event.district }}</p>
+          <h3>{{ event.title|default:"Untitled event" }}</h3>
+
+          {# Date — violet #}
+          <div class="event-meta event-meta-date">
+            <span class="event-icon">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+                <path stroke-linecap="round" d="M8 3v4M16 3v4M3 11h18"></path>
+              </svg>
+            </span>
+            <span class="event-meta-text">{{ event.starts_at|date:'D, d M Y' }}</span>
+          </div>
+
+          {# Venue — sky blue #}
+          {% if event.venue %}
+            <div class="event-meta event-meta-venue">
+              <span class="event-icon">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M12 21s-7-6.5-7-11a7 7 0 1114 0c0 4.5-7 11-7 11z"></path>
+                  <circle cx="12" cy="10" r="2.5"></circle>
+                </svg>
+              </span>
+              <span class="event-meta-text">
+                {{ event.venue }}{% if event.district %}, {{ event.district }}{% endif %}
+              </span>
+            </div>
+          {% endif %}
+        </div>
+
+      </a>
+
+    {% empty %}
+      <div class="event-empty">
+        <p>No upcoming events match your search.</p>
+      </div>
+    {% endfor %}
+  </div>
+
+  {# ---------- Sticky sidebar ads ---------- #}
+  {% if active_sidebar_ads %}
+    <aside class="home-sidebar">
+      <div class="home-sidebar-sticky space-y-4">
+        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-500">Sponsored</h2>
+        {% for ad in active_sidebar_ads %}
+          <div class="ad-sidebar">
+            {% include "advertisements/_card.html" with ad=ad %}
+          </div>
+        {% endfor %}
+      </div>
+    </aside>
+  {% endif %}
+
+</div>
+
+{% endblock %}
+
+{% if page.has_other_pages %}
+  <nav aria-label="Events pagination" class="mt-8 flex items-center justify-center gap-2 text-sm">
+    {% if page.has_previous %}
+      <a href="?{% if q %}q={{ q|urlencode }}&{% endif %}{% if district %}district={{ district|urlencode }}&{% endif %}{% if category %}category={{ category|urlencode }}&{% endif %}page={{ page.previous_page_number }}"
+         class="px-3 py-2 rounded border hover:bg-slate-50">← Previous</a>
+    {% endif %}
+    <span class="text-slate-500">
+      Page {{ page.number }} of {{ page.paginator.num_pages }}
+    </span>
+    {% if page.has_next %}
+      <a href="?{% if q %}q={{ q|urlencode }}&{% endif %}{% if district %}district={{ district|urlencode }}&{% endif %}{% if category %}category={{ category|urlencode }}&{% endif %}page={{ page.next_page_number }}"
+         class="px-3 py-2 rounded border hover:bg-slate-50">Next →</a>
+    {% endif %}
+  </nav>
+{% endif %}

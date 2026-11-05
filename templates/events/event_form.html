@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {% if event %}Edit event · {{ event.title }}{% else %}Create event{% endif %} · EventGate
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto bg-white border rounded-2xl p-6">
+
+  <h1 class="text-3xl font-black mb-1">
+    {% if event %}Edit event{% else %}Create an event{% endif %}
+  </h1>
+  <p class="text-slate-600 mb-5">
+    {% if event %}
+      Changes to a published event go back through review.
+    {% else %}
+      Submit your event for review. You can add ticket tiers after it's approved.
+    {% endif %}
+  </p>
+
+  {% if form.non_field_errors %}
+    <div class="mb-4 p-3 rounded bg-red-100 text-red-900 border border-red-200 text-sm"
+         role="alert">
+      {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+    </div>
+  {% endif %}
+
+  {% if formset.non_form_errors %}
+    <div class="mb-4 p-3 rounded bg-red-100 text-red-900 border border-red-200 text-sm"
+         role="alert">
+      {% for error in formset.non_form_errors %}<div>{{ error }}</div>{% endfor %}
+    </div>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" class="space-y-6" novalidate>
+    {% csrf_token %}
+
+    {# ---------- Event fields ---------- #}
+    <div class="space-y-4">
+      {% for field in form %}
+        <div>
+          <label for="{{ field.id_for_label }}" class="block text-sm font-medium mb-1">
+            {{ field.label }}{% if field.field.required %}<span aria-hidden="true"> *</span>{% endif %}
+          </label>
+
+          {{ field }}
+
+          {% if field.help_text %}
+            <div class="text-xs text-slate-500 mt-1">{{ field.help_text }}</div>
+          {% endif %}
+
+          {% if field.errors %}
+            <p class="text-xs text-red-700 mt-1" role="alert">
+              {{ field.errors|striptags }}
+            </p>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+
+    {# ---------- Video formset ---------- #}
+    <div class="border-t pt-6">
+      <h2 class="text-lg font-bold">Event videos</h2>
+      <p class="text-sm text-slate-500 mb-3">
+        Optional. Add YouTube/Vimeo links or upload MP4/WebM files to show on the event page.
+      </p>
+
+      {{ formset.management_form }}
+
+      {% for video_form in formset %}
+        <div class="border rounded-lg p-4 mb-3 bg-slate-50">
+          {{ video_form.id }}
+
+          {% if video_form.instance.pk %}
+            <p class="text-xs text-slate-500 mb-2">
+              Existing video — leave unchanged or edit below.
+            </p>
+          {% endif %}
+
+          <div class="grid md:grid-cols-2 gap-3">
+            {% for field in video_form.visible_fields %}
+              <div>
+                <label for="{{ field.id_for_label }}" class="block text-xs font-medium mb-1">
+                  {{ field.label }}
+                </label>
+                {{ field }}
+                {% if field.errors %}
+                  <p class="text-xs text-red-700 mt-1" role="alert">
+                    {{ field.errors|striptags }}
+                  </p>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+
+          {% if video_form.instance.pk %}
+            <div class="mt-2 text-xs">
+              {{ video_form.DELETE }} <span class="text-red-700">Delete this video</span>
+            </div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+
+    {# ---------- Actions ---------- #}
+    <div class="flex items-center justify-between gap-3 pt-2">
+      <a href="{% url 'events:organizer_dashboard' %}"
+         class="text-sm text-slate-600 hover:underline">
+        ← Cancel
+      </a>
+      <button type="submit"
+              class="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg px-5 py-3 font-semibold">
+        {% if event %}Save changes{% else %}Save event for review{% endif %}
+      </button>
+    </div>
+  </form>
+
+</div>
+{% endblock %}

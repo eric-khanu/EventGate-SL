@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}My ticket orders · EventGate{% endblock %}
+
+{% block content %}
+
+<div class="max-w-4xl mx-auto">
+
+  <h1 class="text-3xl font-black mb-1">My ticket orders</h1>
+  <p class="text-slate-600 mb-6">
+    View your ticket orders and download your entry QR codes.
+  </p>
+
+  {% for order in orders %}
+    <div id="order-{{ order.reference }}" class="bg-white border rounded-2xl p-5 mb-4">
+
+      {# ---------- Order header ---------- #}
+      <div class="flex flex-wrap justify-between items-start gap-3 pb-3 border-b">
+        <div>
+          <p class="font-bold">
+            Order #{{ order.reference|slice:":8" }}
+          </p>
+          <p class="text-sm text-slate-600 mt-0.5">
+            {{ order.created_at|date:'D, d M Y · g:i A' }}
+            · {{ order.get_payment_method_display }}
+          </p>
+        </div>
+        <div class="text-right">
+          <p class="font-bold text-lg">{{ order.currency }} {{ order.total }}</p>
+          <span class="inline-block mt-1 text-xs font-semibold rounded px-2 py-1
+            {% if order.status == 'paid' %}bg-emerald-100 text-emerald-800
+            {% elif order.status == 'pending' %}bg-amber-100 text-amber-800
+            {% elif order.status == 'rejected' %}bg-red-100 text-red-800
+            {% elif order.status == 'cancelled' %}bg-slate-200 text-slate-700
+            {% elif order.status == 'refunded' %}bg-sky-100 text-sky-800
+            {% else %}bg-slate-100 text-slate-700{% endif %}">
+            {{ order.get_status_display }}
+          </span>
+        </div>
+      </div>
+
+      {# ---------- Items + tickets ---------- #}
+      {% for item in order.items.all %}
+        {% with tickets=item.tickets.all %}
+          <div class="mt-4">
+            <p class="font-semibold">
+              {{ item.tier.event.title }} — {{ item.tier.name }}
+              <span class="text-slate-500 font-normal">× {{ item.quantity }}</span>
+            </p>
+
+            {% if tickets %}
+              <div class="mt-2 flex flex-wrap gap-2">
+                {% for ticket in tickets %}
+                  <a
+                    href="{% url 'tickets:ticket_detail' ticket.public_id %}"
+                    class="inline-flex items-center gap-2 text-sm font-semibold rounded-lg px-3 py-2
+                      {% if ticket.status == 'valid' %}bg-slate-900 hover:bg-slate-800 text-white
+                      {% elif ticket.status == 'used' %}bg-slate-200 text-slate-600
+                      {% elif ticket.status == 'void' %}bg-red-100 text-red-700
+                      {% else %}bg-slate-100 text-slate-700{% endif %}"
+                    title="{{ ticket.get_status_display }}"
+                  >
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                      <rect x="3" y="6" width="18" height="12" rx="2"></rect>
+                      <path stroke-linecap="round" d="M15 6v12"></path>
+                    </svg>
+                    Ticket {{ ticket.public_id|slice:":8" }}
+                    <span class="text-xs opacity-75">{{ ticket.get_status_display }}</span>
+                  </a>
+                {% endfor %}
+              </div>
+            {% elif order.status == 'pending' %}
+              {# Pending: no tickets yet — surface the proof CTA. #}
+              <div class="mt-2 p-3 rounded-lg bg-amber-50 border border-amber-200 text-sm text-amber-900">
+                <p class="font-semibold">Awaiting payment verification.</p>
+                {% if order.payment_proof %}
+                  <p class="mt-1">
+                    We received your payment proof on
+                    {{ order.payment_proof_uploaded_at|date:'d M Y' }}.
+                    You'll get your tickets by email once the organiser
+                    confirms it.
+                  </p>
+                  <a
+                    href="{% url 'orders:order_payment_proof' order.pk %}"
+                    class="inline-block mt-2 text-amber-900 underline font-semibold"
+                  >View the proof you uploaded</a>
+                {% else %}
+                  <p class="mt-1">
+                    Upload a screenshot or receipt of your payment so the
+                    organiser can verify it faster.
+                  </p>
+                  <a
+                    href="{% url 'orders:order_upload_proof' order.reference %}"
+                    class="inline-block mt-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded px-3 py-2"
+                  >Upload payment proof</a>
+                {% endif %}
+              </div>
+            {% else %}
+              {# Not pending and no tickets: rejected / cancelled / etc. #}
+              <div class="mt-2 p-3 rounded-lg bg-slate-50 border border-slate-200 text-sm text-slate-700">
+                No tickets were issued for this order
+                ({{ order.get_status_display|lower }}).
+              </div>
+            {% endif %}
+          </div>
+        {% endwith %}
+      {% endfor %}
+
+    </div>
+  {% empty %}
+    <div class="bg-white border rounded-2xl p-8 text-center">
+      <div class="text-4xl mb-2">🎟️</div>
+      <p class="text-slate-600 mb-4">You haven't ordered any tickets yet.</p>
+      <a href="{% url 'home' %}" class="inline-block bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg px-5 py-3">
+        Browse events →
+      </a>
+    </div>
+  {% endfor %}
+
+</div>
+
+{% endblock %}

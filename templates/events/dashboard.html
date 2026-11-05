@@ -1,0 +1,669 @@
+{% extends "base.html" %}
+
+{% block title %}Organizer Dashboard · EventGate{% endblock %}
+
+{% block content %}
+
+<style>
+    /* =========================================================
+       EVENTGATE ORGANIZER DASHBOARD
+       Scoped theme — all selectors namespaced under .eg-dashboard
+       ========================================================= */
+
+    .eg-dashboard {
+        --eg-green-900: #064e3b;
+        --eg-green-700: #047857;
+        --eg-green-600: #059669;
+        --eg-green-500: #10b981;
+        --eg-slate-900: #0f172a;
+        --eg-slate-700: #334155;
+        --eg-slate-500: #64748b;
+        --eg-slate-400: #94a3b8;
+        --eg-slate-200: #e2e8f0;
+        --eg-slate-100: #f1f5f9;
+        --eg-slate-50:  #f8fafc;
+        --eg-radius-lg: 1.25rem;
+        --eg-radius-md: 0.875rem;
+        --eg-radius-sm: 0.5rem;
+        --eg-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+        --eg-shadow-md: 0 4px 16px rgba(15, 23, 42, 0.06);
+        --eg-shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.10);
+
+        color: var(--eg-slate-700);
+        background: var(--eg-slate-100);
+        padding: 1.5rem;
+        border-radius: var(--eg-radius-lg);
+    }
+
+    /* ---------- Header ---------- */
+
+    .eg-dashboard__header {
+        position: relative;
+        overflow: hidden;
+        background: linear-gradient(135deg, var(--eg-green-900) 0%, var(--eg-green-700) 55%, var(--eg-green-500) 100%);
+        color: #fff;
+        padding: 2rem;
+        border-radius: var(--eg-radius-lg);
+        box-shadow: var(--eg-shadow-lg);
+    }
+
+    .eg-dashboard__header::after {
+        content: "";
+        position: absolute;
+        width: 240px;
+        height: 240px;
+        right: -80px;
+        top: -100px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.08);
+        pointer-events: none;
+    }
+
+    .eg-dashboard__title {
+        color: #fff;
+        font-size: clamp(1.75rem, 4vw, 2.5rem);
+        font-weight: 900;
+        letter-spacing: -0.035em;
+        line-height: 1.15;
+    }
+
+    .eg-dashboard__subtitle {
+        color: #d1fae5;
+        margin-top: 0.5rem;
+    }
+
+    /* ---------- Buttons ---------- */
+
+    .eg-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 600;
+        border-radius: var(--eg-radius-sm);
+        transition: transform 0.15s ease, background-color 0.15s ease,
+                    box-shadow 0.15s ease, filter 0.15s ease;
+        white-space: nowrap;
+    }
+
+    .eg-btn:hover  { transform: translateY(-1px); }
+    .eg-btn:active { transform: translateY(0); }
+
+    .eg-btn:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.35);
+    }
+
+    .eg-btn--primary {
+        background: #fff;
+        color: var(--eg-green-700);
+        padding: 0.75rem 1.25rem;
+        font-size: 0.95rem;
+        box-shadow: var(--eg-shadow-md);
+    }
+    .eg-btn--primary:hover { background: #ecfdf5; }
+
+    .eg-btn--sm {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.75rem;
+    }
+
+    /* ---------- Stat cards ---------- */
+
+    .eg-stat {
+        position: relative;
+        overflow: hidden;
+        background: #fff;
+        border: 1px solid var(--eg-slate-200);
+        border-radius: var(--eg-radius-md);
+        padding: 1.25rem;
+        box-shadow: var(--eg-shadow-sm);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .eg-stat:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--eg-shadow-md);
+    }
+
+    .eg-stat__label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--eg-slate-500);
+        letter-spacing: 0.01em;
+    }
+
+    .eg-stat__value {
+        margin-top: 0.5rem;
+        font-size: 2rem;
+        font-weight: 900;
+        color: var(--eg-slate-900);
+        letter-spacing: -0.03em;
+        line-height: 1.1;
+    }
+
+    .eg-stat__hint {
+        margin-top: 0.4rem;
+        font-size: 0.75rem;
+        color: var(--eg-slate-400);
+    }
+
+    .eg-stat__icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: var(--eg-radius-sm);
+        background: var(--eg-slate-50);
+    }
+
+    .eg-stat__icon svg {
+        width: 1.35rem;
+        height: 1.35rem;
+    }
+
+    /* ---------- Panels ---------- */
+
+    .eg-panel {
+        background: #fff;
+        border: 1px solid var(--eg-slate-200);
+        border-radius: var(--eg-radius-md);
+        padding: 1.25rem;
+        box-shadow: var(--eg-shadow-sm);
+    }
+
+    /* ---------- Payment status strip ---------- */
+
+    .eg-status-strip {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        background: #fff;
+        border: 1px solid var(--eg-slate-200);
+        border-left: 4px solid var(--eg-slate-300);
+        border-radius: var(--eg-radius-md);
+        padding: 1.25rem;
+        box-shadow: var(--eg-shadow-sm);
+    }
+
+    .eg-status-strip--attention { border-left-color: #f59e0b; background: #fffbeb; }
+    .eg-status-strip--clear     { border-left-color: var(--eg-green-500); background: #ecfdf5; }
+
+    .eg-status-strip__title { font-weight: 700; }
+    .eg-status-strip--attention .eg-status-strip__title { color: #b45309; }
+    .eg-status-strip--clear     .eg-status-strip__title { color: var(--eg-green-700); }
+
+    .eg-status-strip__text {
+        margin-top: 0.25rem;
+        font-size: 0.875rem;
+        color: var(--eg-slate-500);
+    }
+
+    /* ---------- Table ---------- */
+
+    .eg-table-wrap {
+        overflow-x: auto;
+        background: #fff;
+        border: 1px solid var(--eg-slate-200);
+        border-radius: var(--eg-radius-md);
+        box-shadow: var(--eg-shadow-sm);
+    }
+
+    .eg-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 0.875rem;
+    }
+
+    .eg-table thead {
+        background: var(--eg-slate-50);
+        color: var(--eg-slate-500);
+    }
+
+    .eg-table thead th {
+        padding: 0.875rem 1rem;
+        text-align: left;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        white-space: nowrap;
+        border-bottom: 1px solid var(--eg-slate-200);
+    }
+
+    .eg-table tbody tr { transition: background-color 0.15s ease; }
+    .eg-table tbody tr:hover { background: var(--eg-slate-50); }
+
+    .eg-table tbody td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--eg-slate-100);
+        vertical-align: middle;
+    }
+    .eg-table tbody tr:last-child td { border-bottom: none; }
+
+    .eg-table__num { text-align: right; font-variant-numeric: tabular-nums; }
+
+    /* ---------- Badges ---------- */
+
+    .eg-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.25rem 0.625rem;
+        border-radius: 9999px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+    }
+
+    .eg-badge--published { background: #d1fae5; color: #065f46; }
+    .eg-badge--pending   { background: #fef3c7; color: #92400e; }
+    .eg-badge--draft     { background: var(--eg-slate-100); color: var(--eg-slate-500); }
+    .eg-badge--cancelled { background: #fee2e2; color: #991b1b; }
+    .eg-badge--danger    { background: #fee2e2; color: #991b1b; }
+
+    /* ---------- Progress ---------- */
+
+    .eg-progress {
+        height: 6px;
+        overflow: hidden;
+        border-radius: 9999px;
+        background: var(--eg-slate-200);
+    }
+
+    .eg-progress__bar {
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--eg-green-600), var(--eg-green-500));
+        transition: width 0.35s ease;
+    }
+
+    .eg-progress__bar--full  { background: #ef4444; }
+    .eg-progress__bar--empty { background: var(--eg-slate-300); }
+
+    /* ---------- Empty state ---------- */
+
+    .eg-empty {
+        text-align: center;
+        padding: 3rem 1.5rem;
+        background: linear-gradient(135deg, var(--eg-slate-50), #ecfdf5);
+    }
+
+    .eg-empty__icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 4rem;
+        height: 4rem;
+        margin-bottom: 1rem;
+        border-radius: var(--eg-radius-md);
+        background: #d1fae5;
+        color: var(--eg-green-700);
+    }
+
+    /* ---------- Responsive ---------- */
+
+    @media (max-width: 768px) {
+        .eg-dashboard { padding: 0.75rem; border-radius: var(--eg-radius-md); }
+        .eg-dashboard__header { padding: 1.5rem; }
+        .eg-stat { padding: 1rem; }
+        .eg-stat__value { font-size: 1.75rem; }
+        .eg-table thead th,
+        .eg-table tbody td { padding: 0.625rem 0.75rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .eg-btn, .eg-stat, .eg-table tbody tr, .eg-progress__bar { transition: none; }
+        .eg-btn:hover, .eg-stat:hover { transform: none; }
+    }
+</style>
+
+
+<div class="eg-dashboard space-y-7">
+
+    <header class="eg-dashboard__header flex flex-wrap justify-between items-center gap-4">
+        <div>
+            <h1 class="eg-dashboard__title">Organizer Dashboard</h1>
+            <p class="eg-dashboard__subtitle">
+                Manage events, monitor ticket sales, and operate check-in.
+            </p>
+        </div>
+
+        <a href="{% url 'events:event_create' %}" class="eg-btn eg-btn--primary">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2"
+                 viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/>
+            </svg>
+            Create Event
+        </a>
+    </header>
+
+    <section aria-label="Dashboard statistics"
+             class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mt-5">
+
+        {# Tickets Created #}
+        <article class="eg-stat">
+            <div class="flex items-center justify-between gap-3">
+                <p class="eg-stat__label">Tickets Created</p>
+                <span class="eg-stat__icon text-emerald-600" aria-hidden="true">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M15 5v2m0 4v2m0 4v2M5 5h14a2 2 0 012 2v3a2 2 0 000 4v3a2 2 0 01-2 2H5a2 2 0 01-2-2v-3a2 2 0 000-4V7a2 2 0 012-2z"/>
+                    </svg>
+                </span>
+            </div>
+            <p class="eg-stat__value">{{ tickets_created|default:0 }}</p>
+            <p class="eg-stat__hint">Total ticket capacity across all tiers</p>
+        </article>
+
+        {# Tickets Sold #}
+        <article class="eg-stat">
+            <div class="flex items-center justify-between gap-3">
+                <p class="eg-stat__label">Tickets Sold</p>
+                <span class="eg-stat__icon text-blue-600" aria-hidden="true">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                </span>
+            </div>
+            <p class="eg-stat__value">{{ tickets_sold|default:0 }}</p>
+            <p class="eg-stat__hint">
+                {% if tickets_created %}
+                    {{ tickets_sold|default:0 }} of {{ tickets_created }}
+                    ({% widthratio tickets_sold tickets_created 100 %}%) sold
+                {% else %}
+                    No ticket capacity available
+                {% endif %}
+            </p>
+        </article>
+
+        {# Paid Orders #}
+        <article class="eg-stat">
+            <div class="flex items-center justify-between gap-3">
+                <p class="eg-stat__label">Paid Orders</p>
+                <span class="eg-stat__icon text-violet-600" aria-hidden="true">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M9 12h6m-6 4h6M7 3h7l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z"/>
+                    </svg>
+                </span>
+            </div>
+            <p class="eg-stat__value">{{ paid_orders|default:0 }}</p>
+            <p class="eg-stat__hint">Successfully paid orders</p>
+        </article>
+
+        {# Gross Revenue #}
+        <article class="eg-stat">
+            <div class="flex items-center justify-between gap-3">
+                <p class="eg-stat__label">Gross Ticket Revenue</p>
+                <span class="eg-stat__icon text-amber-600" aria-hidden="true">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="9"/>
+                        <path stroke-linecap="round"
+                              d="M12 7v10M9.5 9.5h4a1.5 1.5 0 010 3h-3a1.5 1.5 0 000 3h4"/>
+                    </svg>
+                </span>
+            </div>
+            <div class="eg-stat__value">
+                {% for revenue in paid_totals %}
+                    <div>{{ revenue.currency }} {{ revenue.total|floatformat:2 }}</div>
+                {% empty %}
+                    <div>—</div>
+                {% endfor %}
+            </div>
+            <p class="eg-stat__hint">Revenue from paid orders</p>
+        </article>
+
+    </section>
+
+    <section
+        class="eg-status-strip mt-5 {% if pending_orders_total %}eg-status-strip--attention{% else %}eg-status-strip--clear{% endif %}"
+        aria-label="Payment verification status"
+    >
+        <div>
+            {% if pending_orders_total %}
+                <p class="eg-status-strip__title">
+                    {{ pending_orders_total }}
+                    pending order{{ pending_orders_total|pluralize }}
+                </p>
+                <p class="eg-status-strip__text">
+                    Payment verification is required for these orders.
+                </p>
+            {% else %}
+                <p class="eg-status-strip__title">All caught up!</p>
+                <p class="eg-status-strip__text">
+                    There are no pending orders awaiting verification.
+                </p>
+            {% endif %}
+        </div>
+
+        <a href="{% url 'tickets:organizer_sales' %}"
+           class="eg-btn eg-btn--sm border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100">
+            View Sales
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"
+                 viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+            </svg>
+        </a>
+    </section>
+
+    <section aria-labelledby="events-heading">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 mt-5">
+            <div>
+                <h2 id="events-heading" class="text-xl font-bold text-slate-900">
+                    Your Events
+                </h2>
+                <p class="mt-1 text-sm text-slate-500">
+                    Manage your events, ticket inventory, and sales.
+                </p>
+            </div>
+            <span class="text-sm text-slate-500">
+                {{ events|length }} event{{ events|length|pluralize }}
+            </span>
+        </div>
+
+        <div class="eg-table-wrap">
+            <table class="eg-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Event</th>
+                        <th scope="col">Date</th>
+                        <th scope="col">Status</th>
+                        <th scope="col" class="eg-table__num">Tickets Created</th>
+                        <th scope="col" class="eg-table__num">Tickets Sold</th>
+                        <th scope="col" class="eg-table__num">Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for event in events %}
+                        <tr>
+                            {# Title #}
+                            <td>
+                                <a href="{% url 'events:event_edit' event.slug %}"
+                                   class="font-semibold text-slate-900 hover:text-emerald-700 hover:underline">
+                                    {{ event.title }}
+                                </a>
+                            </td>
+
+                            {# Date #}
+                            <td class="whitespace-nowrap text-slate-500">
+                                <time datetime="{{ event.starts_at|date:'c' }}">
+                                    {{ event.starts_at|date:"d M Y" }}
+                                </time>
+                            </td>
+
+                            {# Status #}
+                            <td>
+                                <span class="eg-badge
+                                    {% if event.status == 'published' %}eg-badge--published
+                                    {% elif event.status == 'pending' %}eg-badge--pending
+                                    {% elif event.status == 'draft' %}eg-badge--draft
+                                    {% else %}eg-badge--cancelled{% endif %}">
+                                    {{ event.get_status_display }}
+                                </span>
+                            </td>
+
+                            {# Capacity #}
+                            <td class="eg-table__num font-medium text-slate-700">
+                                {{ event.tickets_created|default:0 }}
+                            </td>
+
+                            {# Sold + progress #}
+                            <td class="eg-table__num">
+                                {% with created=event.tickets_created|default:0 sold=event.tickets_sold|default:0 %}
+                                    {% if created %}
+                                        <div class="font-semibold text-slate-900">
+                                            {{ sold }}
+                                            <span class="font-normal text-slate-400">/ {{ created }}</span>
+                                        </div>
+                                        <p class="mt-1 text-xs text-slate-500">
+                                            {% widthratio sold created 100 %}% sold
+                                        </p>
+                                        <div class="eg-progress mt-2 ml-auto w-28"
+                                             role="progressbar"
+                                             aria-label="Ticket sales progress"
+                                             aria-valuemin="0"
+                                             aria-valuemax="{{ created }}"
+                                             aria-valuenow="{{ sold }}">
+                                            <div class="eg-progress__bar
+                                                {% if sold >= created %}eg-progress__bar--full
+                                                {% elif sold == 0 %}eg-progress__bar--empty{% endif %}"
+                                                style="width: {% widthratio sold created 100 %}%;"></div>
+                                        </div>
+                                        {% if sold >= created %}
+                                            <span class="eg-badge eg-badge--danger mt-2">Sold Out</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-slate-400">—</span>
+                                    {% endif %}
+                                {% endwith %}
+                            </td>
+
+                           
+                            <td>
+                                <div class="flex flex-wrap items-center justify-end gap-2">
+
+                                    {% if event.pending_order_count and event.status in 'published,pending' %}
+                                        <a href="{% url 'orders:verify_orders' event.slug %}"
+                                           title="Verify pending payments for this event"
+                                           class="eg-btn eg-btn--sm bg-amber-500 text-white hover:bg-amber-600">
+                                            <svg width="12" height="12" fill="none" stroke="currentColor"
+                                                 stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                      d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944 11.955 11.955 0 013.382 5.984 12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                            </svg>
+                                            Verify ({{ event.pending_order_count }})
+                                        </a>
+                                    {% endif %}
+
+                                    <a href="{% url 'events:event_edit' event.slug %}"
+                                       title="Edit event"
+                                       class="eg-btn eg-btn--sm border border-slate-300 bg-white text-slate-700 hover:bg-slate-50">
+                                        <svg width="12" height="12" fill="none" stroke="currentColor"
+                                             stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                  d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/>
+                                        </svg>
+                                        Edit
+                                    </a>
+
+                                    {% if event.status == 'published' or event.status == 'pending' %}
+                                        {% if event.tier_count %}
+                                            <a href="{% url 'events:tier_edit' event.slug %}"
+                                               title="Manage ticket tiers"
+                                               class="eg-btn eg-btn--sm bg-emerald-600 text-white hover:bg-emerald-700">
+                                                <svg width="12" height="12" fill="none" stroke="currentColor"
+                                                     stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                          d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/>
+                                                </svg>
+                                                Edit Tier
+                                            </a>
+                                        {% else %}
+                                            <a href="{% url 'events:tier_create' event.slug %}"
+                                               title="Create ticket tier"
+                                               class="eg-btn eg-btn--sm bg-emerald-600 text-white hover:bg-emerald-700">
+                                                <svg width="12" height="12" fill="none" stroke="currentColor"
+                                                     stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                          d="M15 5v2m0 4v2m0 4v2M5 5h14a2 2 0 012 2v3a2 2 0 000 4v3a2 2 0 01-2 2H5a2 2 0 01-2-2v-3a2 2 0 000-4V7a2 2 0 012-2z"/>
+                                                </svg>
+                                                Add Tier
+                                            </a>
+                                        {% endif %}
+                                    {% endif %}
+
+                              
+                                    {% if perms.events.change_eventscanner or request.user == event.organizer or request.user.is_staff %}
+                                        <a href="{% url 'events:manage_scanners' event.slug %}"
+                                           title="Manage scanners for this event"
+                                           class="eg-btn eg-btn--sm border border-slate-300 bg-white text-slate-700 hover:bg-slate-50">
+                                            <svg width="12" height="12" fill="none" stroke="currentColor"
+                                                 stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                      d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4 4 4 0 004 4z"/>
+                                            </svg>
+                                            Scanners{% if event.scanner_count %} ({{ event.scanner_count }}){% endif %}
+                                        </a>
+                                    {% endif %}
+
+                                    {% if event.status == 'published' %}
+                                        <a href="{{ event.get_absolute_url }}"
+                                           target="_blank" rel="noopener noreferrer"
+                                           title="View public event page"
+                                           class="eg-btn eg-btn--sm border border-slate-300 bg-white text-slate-700 hover:bg-slate-50">
+                                            <svg width="12" height="12" fill="none" stroke="currentColor"
+                                                 stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                            </svg>
+                                            View
+                                        </a>
+                                    {% endif %}
+
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="6" class="eg-empty">
+                                <div class="eg-empty__icon" aria-hidden="true">
+                                    <svg width="28" height="28" fill="none" stroke="currentColor"
+                                         stroke-width="1.6" viewBox="0 0 24 24">
+                                        <rect x="3" y="5" width="18" height="16" rx="2"/>
+                                        <path stroke-linecap="round" d="M8 3v4M16 3v4M3 11h18"/>
+                                    </svg>
+                                </div>
+                                <h3 class="text-lg font-bold text-slate-900">No Events Yet</h3>
+                                <p class="mt-2 text-sm text-slate-500">
+                                    You haven't created any events. Start by creating your first event.
+                                </p>
+                                <a href="{% url 'events:event_create' %}"
+                                   class="eg-btn eg-btn--sm mt-5 bg-emerald-600 text-white hover:bg-emerald-700 px-4 py-2.5">
+                                    Create Your First Event
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <footer class="rounded-lg bg-slate-50 border border-slate-200 p-4 mt-5">
+        <p class="text-sm text-slate-600">
+            <span class="font-semibold text-slate-800">Event publishing:</span>
+            Only published events are publicly visible. New and edited events may require
+            administrative review before going live.
+        </p>
+    </footer>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,24 @@
+Hello,
+
+We couldn't verify your payment for order {{ order.reference }} ({{ event_title }}).
+
+  Order total:  {{ order.currency }} {{ order.total }}
+  Payment method: {{ order.get_payment_method_display }}{% if order.payment_reference %}
+  Reference:      {{ order.payment_reference }}{% endif %}
+
+Common reasons:
+  - The transaction reference didn't match a payment we received.
+  - The proof uploaded was unclear or for a different amount.
+  - The payment was sent to the wrong number/account.
+
+What to do next:
+  1. Check that you paid the exact amount to the correct destination.
+  2. Reply to this email with a clear screenshot or receipt.
+  3. Or contact the organiser directly to re-submit your order.
+
+  {{ my_orders_url }}
+
+No tickets have been issued for this order. If you believe this is a
+mistake, reply to this email.
+
+— EventGate

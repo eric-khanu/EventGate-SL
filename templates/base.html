@@ -1,0 +1,135 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Discover events and secure digital tickets across Sierra Leone">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>{% block title %}EventGate Sierra Leone{% endblock %}</title>
+
+  {# Site-wide styles. #}
+  <link rel="stylesheet" href="{% static 'css/output.css' %}">
+
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+
+  <!-- ================= Navigation ================= -->
+  <nav class="bg-slate-950 text-white" aria-label="Primary">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
+
+      <a href="{% url 'home' %}" class="font-black text-xl">
+        EventGate <span class="text-emerald-400">SL</span>
+      </a>
+
+      <div class="flex flex-wrap gap-4 text-sm items-center">
+
+        {% if not is_scanner_only %}
+          <a href="{% url 'events:home' %}" class="hover:text-emerald-400">Events</a>
+          <a href="{% url 'advertisements:dashboard' %}" class="hover:text-emerald-400">
+            {% if is_advertiser %}Advertiser dashboard{% else %}Advertise{% endif %}
+          </a>
+        {% endif %}
+
+        {% if user.is_authenticated %}
+          {% if is_organizer and not is_scanner_only %}
+            <a href="{% url 'events:organizer_dashboard' %}" class="hover:text-emerald-400">Dashboard</a>
+          {% endif %}
+
+          {% if show_scanner_link %}
+            <a href="{% url 'tickets:scanner' %}" class="hover:text-emerald-400">Gate scanner</a>
+          {% endif %}
+
+          {% if not is_scanner_only %}
+            <a href="{% url 'tickets:my_orders' %}" class="hover:text-emerald-400">My tickets</a>
+          {% endif %}
+
+          <form method="post" action="{% url 'accounts:logout' %}" class="inline">
+            {% csrf_token %}
+            <button type="submit" class="hover:text-emerald-400">Log out</button>
+          </form>
+        {% else %}
+          <a href="{% url 'accounts:login' %}"  class="hover:text-emerald-400">Log in</a>
+          <a href="{% url 'accounts:signup' %}" class="hover:text-emerald-400">Sign up</a>
+        {% endif %}
+      </div>
+    </div>
+  </nav>
+
+  <!-- ================= Main ================= -->
+  <main class="max-w-6xl mx-auto p-4 md:p-8">
+
+    {% if active_banner_ads %}
+      <section class="grid md:grid-cols-2 gap-4 mb-6" aria-label="Sponsored">
+        {% for ad in active_banner_ads %}
+          {% include "advertisements/_card.html" with ad=ad %}
+        {% endfor %}
+      </section>
+    {% endif %}
+
+    {% if messages %}
+      <div role="status" aria-live="polite">
+        {% for message in messages %}
+          {% if 'error' in message.tags %}
+            <div class="mb-3 p-3 rounded bg-red-100 text-red-900 border border-red-200">{{ message }}</div>
+          {% elif 'warning' in message.tags %}
+            <div class="mb-3 p-3 rounded bg-amber-100 text-amber-900 border border-amber-200">{{ message }}</div>
+          {% elif 'info' in message.tags %}
+            <div class="mb-3 p-3 rounded bg-slate-100 text-slate-800 border border-slate-200">{{ message }}</div>
+          {% elif 'success' in message.tags %}
+            <div class="mb-3 p-3 rounded bg-emerald-100 text-emerald-900 border border-emerald-200">{{ message }}</div>
+          {% else %}
+            {# Unknown tag — render as neutral, not as success. #}
+            <div class="mb-3 p-3 rounded bg-slate-100 text-slate-800 border border-slate-200">{{ message }}</div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+
+    {% if active_spotlight_ads %}
+      <section class="mt-10" aria-label="Featured partners">
+        <h2 class="text-xl font-bold mb-3">Featured partners</h2>
+        <div class="grid md:grid-cols-3 gap-4">
+          {% for ad in active_spotlight_ads %}
+            {% include "advertisements/_card.html" with ad=ad %}
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+  </main>
+
+  <!-- ================= Footer ================= -->
+  <footer class="mt-12 bg-slate-900 text-slate-300 p-8 text-center text-sm">
+    EventGate SL · Digital event tickets for Sierra Leone
+  </footer>
+
+  <script>
+    (function () {
+      var cards = document.querySelectorAll(".ad-card[data-impression-url]");
+      cards.forEach(function (card) {
+        if (card.dataset.tracked) return;
+        card.dataset.tracked = "1";
+        // POST, not GET — the impression endpoint requires POST.
+        fetch(card.dataset.impressionUrl, {
+          method: "POST",
+          credentials: "same-origin",
+          keepalive: true,
+          headers: { "X-CSRFToken": getCsrfToken() },
+        }).catch(function () {
+          // Best-effort: a failed impression must never affect the page.
+        });
+      });
+
+      function getCsrfToken() {
+        var m = document.cookie.match(/csrftoken=([^;]+)/);
+        return m ? decodeURIComponent(m[1]) : "";
+      }
+    })();
+  </script>
+
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

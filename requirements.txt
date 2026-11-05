@@ -1,0 +1,9 @@
+Django
+gunicorn
+psycopg[binary]
+Pillow
+qrcode[pil]
+whitenoise
+django-environ
+cryptography
+python-dateutil

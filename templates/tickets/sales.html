@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}Ticket orders and sales · EventGate{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+
+  {# ---- Header ------------------------------------------------------ #}
+  <div class="flex flex-wrap justify-between items-end gap-3 mb-1">
+    <div>
+      <h1 class="text-3xl font-black">Ticket orders and sales</h1>
+      <p class="text-slate-600 mt-1">
+        All orders across your events.
+        {% if request.user.is_staff %}
+          Review and approve payments from the <a
+            href="{% url 'admin:orders_order_changelist' %}"
+            class="text-emerald-700 hover:underline font-semibold">Django admin</a>.
+        {% else %}
+          Open an event from your dashboard to verify payments.
+        {% endif %}
+      </p>
+    </div>
+    <div class="text-right">
+      <p class="text-sm text-slate-500">
+        {{ orders|length }} order{{ orders|length|pluralize }}
+      </p>
+      {% if request.user.is_staff %}
+        <a
+          href="{% url 'admin:orders_order_changelist' %}"
+          class="inline-block mt-1 text-sm font-semibold text-emerald-700 hover:text-emerald-900"
+        >Open admin →</a>
+      {% else %}
+        <a
+          href="{% url 'events:organizer_dashboard' %}"
+          class="inline-block mt-1 text-sm font-semibold text-emerald-700 hover:text-emerald-900"
+        >← Dashboard</a>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ---- Filters (GET) ----------------------------------------------- #}
+  <form method="get" class="mb-4 flex flex-wrap gap-2 items-center" role="search">
+    <label for="orders-q" class="sr-only">Search orders</label>
+    <input
+      id="orders-q"
+      type="search"
+      name="q"
+      value="{{ request.GET.q|default:'' }}"
+      placeholder="Search reference, email, phone…"
+      class="flex-1 min-w-[16rem] border rounded-lg p-2 text-sm"
+    >
+
+    <label for="orders-status" class="sr-only">Filter by status</label>
+    <select id="orders-status" name="status" class="border rounded-lg p-2 text-sm">
+      <option value="">All statuses</option>
+      <option value="pending"   {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
+      <option value="paid"      {% if request.GET.status == 'paid' %}selected{% endif %}>Paid</option>
+      <option value="rejected"  {% if request.GET.status == 'rejected' %}selected{% endif %}>Rejected</option>
+      <option value="cancelled" {% if request.GET.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+      <option value="refunded"  {% if request.GET.status == 'refunded' %}selected{% endif %}>Refunded</option>
+    </select>
+
+    <button type="submit"
+      class="bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg px-4 py-2 text-sm">
+      Filter
+    </button>
+
+    {% if request.GET.q or request.GET.status %}
+      <a href="{% url 'tickets:organizer_sales' %}"
+         class="text-sm text-slate-600 underline hover:text-slate-900">
+        Clear
+      </a>
+    {% endif %}
+  </form>
+
+  {# ---- Orders table ----------------------------------------------- #}
+  {% if orders %}
+    <div class="bg-white border rounded-2xl overflow-x-auto">
+      <table class="w-full text-sm" aria-label="Orders across your events">
+        <caption class="sr-only">Orders across your events</caption>
+        <thead class="bg-slate-100 text-slate-700">
+          <tr>
+            <th class="p-3 text-left font-semibold">Order</th>
+            <th class="p-3 text-left font-semibold">Event / tier</th>
+            <th class="p-3 text-left font-semibold">Buyer</th>
+            <th class="p-3 text-left font-semibold">Payment</th>
+            <th class="p-3 text-left font-semibold">Proof</th>
+            <th class="p-3 text-left font-semibold">Total</th>
+            <th class="p-3 text-left font-semibold">Status</th>
+            <th class="p-3 text-left font-semibold"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in orders %}
+            <tr class="border-t hover:bg-slate-50 align-top" id="order-{{ order.reference }}">
+
+              <td class="p-3 font-mono text-xs text-slate-700">
+                {% if request.user.is_staff %}
+                  <a
+                    href="{% url 'admin:orders_order_change' order.pk %}"
+                    class="underline"
+                    title="{{ order.reference }}"
+                  >{{ order.reference|slice:":8" }}</a>
+                {% else %}
+                  <span title="{{ order.reference }}">{{ order.reference|slice:":8" }}</span>
+                {% endif %}
+              </td>
+
+              <td class="p-3">
+                {% for item in order.items.all %}
+                  <div class="font-medium">{{ item.tier.event.title }}</div>
+                  <div class="text-xs text-slate-500">
+                    {{ item.tier.name }} × {{ item.quantity }}
+                    {% with ticket_count=item.tickets.all|length %}
+                      {% if ticket_count %}
+                        · {{ ticket_count }} ticket{{ ticket_count|pluralize }} issued
+                      {% endif %}
+                    {% endwith %}
+                  </div>
+                  {% if not forloop.last %}<div class="border-t border-slate-200 my-1.5"></div>{% endif %}
+                {% empty %}
+                  <span class="text-slate-400">No items</span>
+                {% endfor %}
+              </td>
+
+              <td class="p-3">
+                <div>{{ order.email }}</div>
+                {% if order.phone %}
+                  <div class="text-xs text-slate-500">{{ order.phone }}</div>
+                {% endif %}
+              </td>
+
+              <td class="p-3">
+                {% if order.payment_reference %}
+                  <div class="font-mono text-xs">{{ order.payment_reference }}</div>
+                {% endif %}
+                {% if order.payment_note %}
+                  <div class="text-xs text-slate-500 mt-0.5">{{ order.payment_note|truncatechars:60 }}</div>
+                {% endif %}
+                {% if not order.payment_reference and not order.payment_note %}
+                  <span class="text-slate-400">—</span>
+                {% endif %}
+              </td>
+
+              {# ---- Proof: view inline / force-download ------------- #}
+              <td class="p-3">
+                {% if order.payment_proof %}
+                  <a
+                    href="{% url 'orders:order_payment_proof_view' order.pk %}"
+                    target="_blank"
+                    rel="noopener"
+                    class="text-emerald-700 font-semibold hover:underline"
+                  >View</a>
+                  <span class="text-slate-400">·</span>
+                  <a
+                    href="{% url 'orders:download_payment_proof' order.reference %}"
+                    class="text-xs text-slate-600 hover:underline"
+                    aria-label="Download payment proof for order {{ order.reference }}"
+                  >Download</a>
+                {% else %}
+                  <span class="text-slate-400 text-xs">None</span>
+                {% endif %}
+              </td>
+
+              <td class="p-3 font-semibold">{{ order.currency }} {{ order.total }}</td>
+
+              <td class="p-3">
+                <span class="inline-block text-xs font-semibold rounded px-2 py-1
+                  {% if order.status == 'paid' %}bg-emerald-100 text-emerald-800
+                  {% elif order.status == 'pending' %}bg-amber-100 text-amber-800
+                  {% elif order.status == 'rejected' %}bg-red-100 text-red-800
+                  {% elif order.status == 'cancelled' %}bg-slate-200 text-slate-700
+                  {% elif order.status == 'refunded' %}bg-sky-100 text-sky-800
+                  {% else %}bg-slate-100 text-slate-700{% endif %}">
+                  {{ order.get_status_display }}
+                </span>
+              </td>
+
+              <td class="p-3 text-right">
+                {% if order.status == 'pending' %}
+                  {% with item=order.items.first %}
+                    {% if item %}
+                      <a
+                        href="{% url 'orders:verify_orders' item.tier.event.slug %}"
+                        class="inline-block text-xs font-semibold text-amber-700 hover:underline whitespace-nowrap"
+                        title="Verify payment for this order"
+                      >Verify →</a>
+                    {% endif %}
+                  {% endwith %}
+                {% endif %}
+              </td>
+
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="bg-white border rounded-2xl p-8 text-center">
+      <div class="text-4xl mb-2" aria-hidden="true">📊</div>
+      <p class="text-slate-600">No orders yet.</p>
+      <p class="text-sm text-slate-500 mt-1">
+        Orders will appear here when buyers checkout for your events.
+      </p>
+    </div>
+  {% endif %}
+
+  {# ---- Verification reminder -------------------------------------- #}
+  <div class="mt-6 p-4 rounded-lg bg-amber-50 border border-amber-200 text-sm text-amber-900">
+    <p class="font-semibold">Payment verification reminder:</p>
+    <p class="mt-1">
+      Verify each payment against your provider statement or bank account
+      <strong>before</strong> approving the order. Never issue tickets
+      without checking.
+    </p>
+  </div>
+
+</div>
+{% endblock %}

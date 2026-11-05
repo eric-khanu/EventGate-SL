@@ -1,0 +1,25 @@
+Hello {{ owner.get_username }},
+
+Your payment has been verified. Your ticket for {{ event.title }} is below.
+
+  Event:    {{ event.title }}
+  Date:     {{ event.starts_at|date:"l, d F Y · g:i A" }}
+  Venue:    {{ event.venue }}{% if event.district %}, {{ event.district }}{% endif %}
+  Tier:     {{ ticket.order_item.tier.name }}
+  Ticket:   {{ ticket.public_id }}
+  Order:    {{ order.reference }}
+
+Open your ticket (with QR code):
+
+  {{ ticket_url }}
+
+You can also view all your tickets at any time:
+
+  {{ my_orders_url|default:ticket_url }}
+
+Keep this ticket private. Each QR is valid for a single scan and is
+rejected if reused. Do not share screenshots of it.
+
+If you have any questions, reply to this email or contact the organiser.
+
+— EventGate

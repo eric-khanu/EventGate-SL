@@ -1,0 +1,37 @@
+{% load static %}
+<article
+  class="ad-card bg-white border border-amber-200 rounded-2xl overflow-hidden shadow-sm"
+  data-impression-url="{% url 'ad_impression' ad.pk %}"
+  data-ad-id="{{ ad.pk }}"
+>
+  <div class="px-3 pt-3 flex items-center justify-between">
+    <span class="text-xs text-slate-500 truncate ml-2">{{ ad.company_name }}</span>
+  </div>
+
+  <div
+    href="{% url 'ad_click' ad.pk %}"
+    target="_blank"
+    rel="sponsored noopener noreferrer"
+    class="block"
+  >
+    {% if ad.video %}
+      <video
+        class="w-full max-h-64 object-cover mt-2 bg-black"
+        controls
+        playsinline
+        preload="metadata"
+        {% if ad.image %}poster="{{ ad.image.url }}"{% endif %}
+      >
+        <source src="{{ ad.video.url }}" type="video/mp4">
+        Your browser does not support video.
+      </video>
+    {% elif ad.image %}
+      <img
+        src="{{ ad.image.url }}"
+        loading="lazy"
+        class="w-full max-h-64 object-cover mt-2"
+        alt="{{ ad.title }}"
+      >
+    {% endif %}
+  </div>
+</article>

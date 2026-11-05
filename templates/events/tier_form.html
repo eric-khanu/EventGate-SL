@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {% if mode == "edit" %}Edit ticket tier{% else %}Add ticket tier{% endif %} · {{ event.title }}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <h1 class="text-2xl font-black mb-1">
+    {% if mode == "edit" %}Adjust ticket tier{% else %}Create ticket tier{% endif %}
+  </h1>
+  <p class="text-slate-500 mb-6">{{ event.title }}</p>
+
+  {% if mode == "edit" and tier %}
+    <div class="bg-slate-50 border rounded-xl p-4 mb-6 text-sm">
+      <p><strong>Sold so far:</strong> {{ tier.sold }}</p>
+      <p class="text-slate-500 mt-1">
+        You can raise or lower the total quantity, but not below
+        {{ tier.sold }} (already sold).
+      </p>
+    </div>
+  {% endif %}
+
+  {% if form.non_field_errors %}
+    <div class="p-3 rounded bg-red-100 text-red-900 border border-red-200 text-sm mb-4"
+         role="alert">
+      {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+    </div>
+  {% endif %}
+
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
+
+    {% for field in form %}
+      <div>
+        <label for="{{ field.id_for_label }}" class="block font-semibold mb-1">
+          {{ field.label }}{% if field.field.required %}<span aria-hidden="true"> *</span>{% endif %}
+        </label>
+        {{ field }}
+        {% if field.help_text %}
+          <p class="text-xs text-slate-500 mt-1">{{ field.help_text }}</p>
+        {% endif %}
+        {% for err in field.errors %}
+          <p class="text-red-600 text-sm mt-1" role="alert">{{ err }}</p>
+        {% endfor %}
+      </div>
+    {% endfor %}
+
+    <div class="flex gap-2 pt-2">
+      <button
+        type="submit"
+        class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg px-5 py-3"
+      >
+        {% if mode == "edit" %}Save changes{% else %}Create tier{% endif %}
+      </button>
+      <a
+        href="{% url 'events:organizer_dashboard' %}"
+        class="border rounded-lg px-5 py-3 font-semibold text-slate-700 hover:bg-slate-50"
+      >
+        Cancel
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}
