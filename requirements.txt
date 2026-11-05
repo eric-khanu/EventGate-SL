@@ -12,7 +12,6 @@ psycopg-binary==3.3.6
 pycparser==3.11
 python-dateutil==2.9.0.post0
 python-magic==0.4.27
-python-magic-bin==0.4.14
 qrcode==8.2
 six==1.17.0
 sqlparse==0.6.0
