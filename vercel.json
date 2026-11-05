@@ -18,7 +18,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "eventgate-updated-new/wsgi.py"
+      "dest": "config/wsgi.py"
     }
   ]
 }
