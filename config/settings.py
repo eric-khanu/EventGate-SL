@@ -194,13 +194,12 @@ STATICFILES_DIRS = [BASE_DIR / "static"] if (BASE_DIR / "static").exists() else 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-# Removed STATICFILES_STORAGE
+# Use the modern STORAGES setting for Django 6.1
 STORAGES = {
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
-        # Temporarily use this to guarantee CSS loads
         "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage", 
     },
 }
