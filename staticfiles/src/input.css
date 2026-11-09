@@ -1,0 +1,342 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------------------------------------------------------------------------
+ * EventGate SL — brand tokens
+ * ------------------------------------------------------------------------- */
+:root {
+  color-scheme: light;
+  --eventgate-primary: #064e3b;   /* emerald-900 */
+  --eventgate-accent: #34d399;    /* emerald-400 */
+}
+
+/* ---------------------------------------------------------------------------
+ * Base resets
+ * ------------------------------------------------------------------------- */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+}
+
+:focus-visible {
+  outline: 3px solid #f59e0b;
+  outline-offset: 2px;
+}
+
+
+/* ---------------------------------------------------------------------------
+ * Form controls
+ *
+ * Django renders {{ field }} as a bare <input>, so Tailwind utility classes
+ * on the *wrapper* don't reach the input. These rules give every text-like
+ * input, textarea, and select a consistent look across login, signup,
+ * checkout, event/tier forms, and ad forms.
+ *
+ * We use plain CSS instead of @apply so the fallback applies reliably even
+ * if a specific utility class wasn't included in output.css.
+ * ------------------------------------------------------------------------- */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+input[type="url"],
+input[type="search"],
+input[type="datetime-local"],
+input[type="date"],
+input[type="time"],
+textarea,
+select {
+  width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid #cbd5e1;
+  padding: 0.75rem;
+  background: white;
+  color: #0f172a;
+  font-size: 0.875rem;
+  font-family: inherit;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+input[type="tel"]:focus,
+input[type="url"]:focus,
+input[type="search"]:focus,
+input[type="datetime-local"]:focus,
+input[type="date"]:focus,
+input[type="time"]:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 2px #d1fae5;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  height: 1rem;
+  width: 1rem;
+  border-radius: 0.25rem;
+  border: 1px solid #cbd5e1;
+  accent-color: #10b981;
+}
+
+input[type="file"] {
+  width: 100%;
+  font-size: 0.875rem;
+  color: #475569;
+}
+
+input[type="file"]::file-selector-button {
+  margin-right: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: #f1f5f9;
+  color: #0f172a;
+  cursor: pointer;
+}
+
+input[type="file"]::file-selector-button:hover {
+  background: #e2e8f0;
+}
+
+input:disabled,
+textarea:disabled,
+select:disabled {
+  background: #f1f5f9;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+/* Django's password validator help text renders as a <ul> — keep it small. */
+.helptext ul,
+.helptext li {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+
+/* ---------------------------------------------------------------------------
+ * Event card
+ * ------------------------------------------------------------------------- */
+.event-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  color: #0f172a;
+  text-decoration: none;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.event-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.event-card img {
+  height: 12rem;
+  width: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.event-card .event-info {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  color: #0f172a;
+}
+
+.event-card .event-category {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #047857;
+  font-weight: 700;
+  margin: 0;
+}
+
+.event-card h3 {
+  font-weight: 700;
+  font-size: 1.25rem;
+  margin: 0.5rem 0 0 0;
+  color: #0f172a;
+  line-height: 1.3;
+}
+
+.event-card .event-summary {
+  color: #475569;
+  font-size: 0.875rem;
+  margin: 0.75rem 0 0 0;
+  flex: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+
+/* ---------------------------------------------------------------------------
+ * Event metadata rows (date / time / venue) — with colored icons
+ * ------------------------------------------------------------------------- */
+.event-card .event-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.45rem 0 0 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #0f172a;
+}
+
+.event-card .event-meta-text {
+  color: #334155;
+  line-height: 1.3;
+}
+
+.event-card .event-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0.375rem;
+  flex-shrink: 0;
+}
+
+.event-card .event-icon svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  display: block;
+}
+
+/* Date — violet */
+.event-card .event-meta-date .event-icon {
+  background: #ede9fe;
+  color: #7c3aed;
+}
+
+/* Time — amber */
+.event-card .event-meta-time .event-icon {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+/* Venue — sky blue */
+.event-card .event-meta-venue .event-icon {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+
+/* ---------------------------------------------------------------------------
+ * Event grid — responsive: 1 → 2 → 3 columns
+ * ------------------------------------------------------------------------- */
+.event-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .event-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .event-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.event-empty {
+  grid-column: 1 / -1;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 2rem;
+  text-align: center;
+  color: #475569;
+}
+
+
+/* ---------------------------------------------------------------------------
+ * Ad card (used in main grid AND sidebar)
+ * ------------------------------------------------------------------------- */
+.ad-card {
+  background: white;
+  border: 1px solid #fcd34d;   /* amber-300 — visually different from events */
+  border-radius: 1rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s ease;
+  text-decoration: none;
+  color: inherit;
+}
+
+.ad-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.ad-card img,
+.ad-card video {
+  width: 100%;
+  max-height: 16rem;
+  object-fit: cover;
+  display: block;
+}
+
+/* Sidebar-specific tweaks — narrower column */
+.ad-sidebar .ad-card {
+  font-size: 0.9em;
+}
+
+.ad-sidebar .ad-card img,
+.ad-sidebar .ad-card video {
+  max-height: 10rem;
+}
+
+
+/* ---------------------------------------------------------------------------
+ * Home page layout — events + sticky sidebar
+ * ------------------------------------------------------------------------- */
+.home-layout {
+  display: grid;
+  gap: 2rem;
+  align-items: start;   /* CRITICAL — keeps sidebar at top, doesn't stretch */
+}
+
+@media (min-width: 1024px) {
+  .home-layout {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+}
+
+.home-sidebar {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .home-sidebar {
+    display: block;
+  }
+}
+
+.home-sidebar-sticky {
+  position: sticky;
+  top: 1.5rem;
+}
