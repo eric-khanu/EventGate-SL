@@ -1,5 +1,3 @@
-"""Forms for creating and editing events, their videos, and ticket tiers."""
-
 from django import forms
 from django.utils import timezone
 from PIL import Image, UnidentifiedImageError
@@ -11,13 +9,7 @@ from .models import Event, EventVideo, TicketTier
 # Reusable widgets / helpers
 # ---------------------------------------------------------------------------
 def _datetime_widget():
-    """
-    Return a *fresh* ``DateTimeInput`` for ``<input type="datetime-local">``.
-
-    Widgets are stateful (Django binds ``attrs`` to a field instance each
-    time a form is built), so sharing a single module-level instance across
-    fields can leak attributes between them. Always construct per field.
-    """
+    
     return forms.DateTimeInput(
         attrs={"type": "datetime-local"},
         format="%Y-%m-%dT%H:%M",
@@ -63,15 +55,7 @@ class EventForm(forms.ModelForm):
         }
 
     def clean_cover_image(self):
-        """
-        Verify the upload is a real image with Pillow.
-
-        ``ImageField`` already checks the header, but a polyglot file (valid
-        JPEG header followed by a payload) can pass that and still be served
-        as ``image/jpeg`` in an unsuspecting template. ``Image.verify()``
-        walks the whole file. ``clean_cover_image`` re-seeks so subsequent
-        reads (the actual save) still get a complete stream.
-        """
+      
         f = self.cleaned_data.get("cover_image")
         if not f or not hasattr(f, "read"):
             return f
@@ -132,15 +116,7 @@ class TierForm(forms.ModelForm):
         }
 
     def __init__(self, *args, event=None, organizer=None, **kwargs):
-        """
-        Pop the custom kwargs BEFORE calling super(), otherwise Django's
-        BaseModelForm.__init__() raises
-        ``TypeError: __init__() got an unexpected keyword argument 'event'``.
-
-        ``organizer`` is a defence-in-depth check — the view already scopes
-        the event to the organizer, but if a future refactor drops that
-        filter, the form refuses to save a tier against someone else's event.
-        """
+      
         self.event = event
         self.organizer = organizer
         super().__init__(*args, **kwargs)

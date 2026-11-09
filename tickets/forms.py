@@ -1,11 +1,3 @@
-"""Forms for the tickets app.
-
-Currently hosts:
-
-* ``CheckoutForm`` — validates the checkout page's inputs, including the
-  optional payment proof upload.
-"""
-
 from __future__ import annotations
 
 from django import forms

@@ -1,5 +1,3 @@
-"""Django admin for advertisement plans, subscriptions, and campaigns."""
-
 from django.contrib import admin, messages
 from django.db import transaction
 

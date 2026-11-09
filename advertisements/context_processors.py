@@ -1,5 +1,3 @@
-"""Context processors that inject active advertisements into templates."""
-
 from django.db.models import Q
 from django.utils import timezone
 
@@ -7,18 +5,7 @@ from .models import AdCampaign, AdSubscription
 
 
 def active_advertisements(request):
-    """
-    Adds currently-live advertisements to the template context.
-
-    Available keys:
-        active_banner_ads    — up to 3 hero/banner ads, randomised
-        active_sidebar_ads   — up to 2 sidebar ads, randomised
-        active_spotlight_ads — up to 3 spotlight ads, randomised
-
-    If the request isn't authenticated or the site is in a context where
-    ads don't make sense (e.g. admin), the context variables are still set
-    to empty querysets so templates don't need ``|default_if_none``.
-    """
+  
     now = timezone.now()
 
     ads = (

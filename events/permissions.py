@@ -1,14 +1,3 @@
-"""Event-scoped access predicates.
-
-These are the *only* functions that decide whether a user may scan tickets
-for an event, or manage scanners on it. Views, decorators, and the context
-processor all go through them — otherwise the nav and the view can disagree.
-
-Do NOT put role/group logic here. "Is this user a scanner at all?" belongs
-in ``accounts.permissions``. This module answers questions about a *specific
-event* and a specific user.
-"""
-
 from __future__ import annotations
 
 from django.db.models import QuerySet
@@ -88,23 +77,12 @@ def can_manage_scanners(user, event) -> bool:
 # Internal helpers
 # ---------------------------------------------------------------------------
 def _is_scanner_role(user) -> bool:
-    """
-    Account-level role check — delegates to ``accounts.permissions``.
 
-    Kept private so event-scoped callers can short-circuit before running
-    the DB query, without duplicating role logic here.
-    """
     from accounts.permissions import has_scanner_role
     return has_scanner_role(user)
 
 def organizes_any_event(user) -> bool:
-    """
-    True if ``user`` owns at least one event.
-
-    Used by ``accounts.permissions.scanner_required`` — organizers get
-    scanner access to their own events without an ``EventScanner`` row,
-    matching ``can_scan``.
-    """
+ 
     if not getattr(user, "is_authenticated", False):
         return False
     # Local import — ``events.permissions`` is imported by

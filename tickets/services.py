@@ -1,34 +1,3 @@
-"""
-tickets/services.py
-~~~~~~~~~~~~~~~~~~~
-
-Scanner-side validation and consumption — the ONLY place a ticket is
-consumed.
-
-Order of checks (and why):
-
-  1. Decode + verify QR HMAC.    Reject before touching the DB.
-  2. Look up by ``token_hash``.  One indexed query; no plaintext lookup.
-  3. Acquire ``select_for_update``.  Serialize concurrent scans.
-  4. Stale-key check (``kv``).   Reject QR payloads signed before a
-                                 re-encryption — the ticket was rotated.
-  5. Event scope.                Ticket must be for the event the scanner
-                                 selected (not just "any event they can
-                                 scan").
-  6. Scanner authorization.      ``can_scan`` — assignment / organizer.
-  7. Event window / status.      Check-in opens 2 h before starts_at.
-  8. Ticket status.              VALID only; USED/VOID get specific codes.
-  9. ``mark_used``.              The conditional UPDATE is the actual
-                                 gate — steps 1–8 all just pick the right
-                                 error message.
-
-The nonce is NOT consulted here. Per the ``qr_nonce`` rebuild, the nonce
-is a diagnostic signal for ``ScanAttempt``, not a gate. If it were a gate,
-a Redis outage would block check-in. The DB row lock is the real barrier:
-two simultaneous scans of the same QR serialize at step 3, and step 9's
-conditional UPDATE rejects the loser.
-"""
-
 from __future__ import annotations
 
 import logging

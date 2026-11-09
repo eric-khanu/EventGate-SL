@@ -1,5 +1,3 @@
-"""Views for checkout, ticket display, scanning, and scanner stats."""
-
 from __future__ import annotations
 
 import json

@@ -1,5 +1,3 @@
-"""Models for advertisement plans, subscriptions, and campaigns."""
-
 import mimetypes
 from decimal import Decimal
 from pathlib import Path

@@ -1,5 +1,3 @@
-"""Auth views for the accounts app."""
-
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.views import LoginView, LogoutView

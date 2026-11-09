@@ -1,5 +1,3 @@
-"""Django admin for orders."""
-
 import io
 import zipfile
 

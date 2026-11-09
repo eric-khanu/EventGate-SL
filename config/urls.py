@@ -1,14 +1,3 @@
-"""Root URL configuration.
-
-Naming convention:
-    - ``admin``           — Django admin
-    - ``accounts:*``      — auth (login / logout / signup / password reset)
-    - ``events:*``        — event listing, dashboard, tier management
-    - ``orders:*``        — order verification, payment-proof download
-    - ``tickets:*``       — checkout, my-orders, ticket detail, scanner
-    - ``advertising:*``   — advertiser dashboard, subscribe, tracking
-"""
-
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin

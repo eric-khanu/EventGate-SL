@@ -1,10 +1,3 @@
-"""Email helpers for tickets.
-
-``send_ticket_email`` renders the ticket as an inline PNG QR plus text
-URL, and sends it to ``order.email``. ``send_rejection_email`` notifies
-the buyer that payment could not be verified.
-"""
-
 from __future__ import annotations
 
 import logging

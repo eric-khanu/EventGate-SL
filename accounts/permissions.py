@@ -1,18 +1,3 @@
-"""Account-level role checks and view decorators.
-
-Never imports ``events.models`` at module load — role checks that need event
-data live in ``events.permissions``. This module answers "what role is this
-user?" and "does this request pass the account-level gate?".
-
-Layering:
-
-    accounts.roles        -- the group names (strings)
-    accounts.permissions  -- role predicates + decorators (this file)
-    events.permissions    -- event-scoped predicates (can_scan, ...)
-
-    accounts never imports from events. Events imports from accounts.
-"""
-
 from __future__ import annotations
 
 from functools import wraps

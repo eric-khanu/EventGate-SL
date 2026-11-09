@@ -1,33 +1,3 @@
-"""
-tickets/tokens.py
-~~~~~~~~~~~~~~~~~
-
-**Alternative** credential — NOT used by the current scan path.
-
-The primary credential is the Fernet-encrypted raw token; scanners look up
-by ``token_hash`` (SHA-256 of the raw token) and the DB is authoritative.
-This module produces a *self-describing, HMAC-signed* token in the form
-
-    EGT1.<public_id>.<event_id>.<issued_epoch>.<sig>
-
-which a **future offline scanner** could validate without a DB lookup:
-verify the HMAC, check that ``expires_at`` hasn't passed, and trust the
-event binding. It is not wired into ``tickets.services.validate_and_consume``
-because online validation is strictly stronger — a valid token doesn't
-prove the ticket hasn't been used.
-
-If you activate it:
-
-  * Set ``TICKET_SIGNING_KEYS`` (no fallback to ``SECRET_KEY``).
-  * Rotate keys like any signing key — plan for a short outage of the
-    offline path during rotation.
-  * Remember: **an offline scanner can be fooled by a screenshot** because
-    it has no way to check ``Ticket.status``. Only use offline mode as a
-    fallback, and reconcile against the DB on next connect.
-
-Delete this file if you're not building an offline scanner.
-"""
-
 from __future__ import annotations
 
 import base64

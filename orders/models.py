@@ -1,5 +1,3 @@
-"""Models for orders and their line items."""
-
 import logging
 import mimetypes  # kept for tooling; not relied on for security
 import uuid

@@ -1,5 +1,3 @@
-"""Models for events, their ticket tiers, scanner assignments, and media."""
-
 import re
 from decimal import Decimal
 

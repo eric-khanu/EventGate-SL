@@ -1,33 +1,3 @@
-"""
-tickets/qr_nonce.py
-~~~~~~~~~~~~~~~~~~~
-
-Nonce handling for EventGate QR tickets — rebuilt.
-
-Design contract
----------------
-*The nonce is NOT the security boundary.* The database is. A QR is public
-once rendered (anyone with a camera can read it), so a nonce cannot prevent
-a screenshot from being shared. What a nonce *can* do is:
-
-  * bind the displayed QR to the moment of rendering, so support can tell
-    a "scanned from a fresh page" apart from "scanned from a 6-hour-old
-    screenshot";
-  * throttle offline enumeration by a compromised scanner (short TTL on any
-    issued nonce makes brute-force effort expire).
-
-The database — ``Ticket.status``, ``Ticket.mark_used()``, and
-``ScanAttempt`` — is what actually prevents duplicate use. The nonce module
-must never be the only thing standing between a QR and a scan.
-
-The nonce is embedded in the QR payload as ``<token>.<nonce>``. The
-scanner splits on the last ``.`` and stores the nonce hash in the
-``ScanAttempt`` row. No cache is consulted for scan-validity. If the nonce
-is missing/stale/unknown, the scan is *still attempted* — and rejected by
-the DB if the ticket has already been used. The nonce is a diagnostic
-signal, not a gate.
-"""
-
 from __future__ import annotations
 
 import hashlib
@@ -160,3 +130,5 @@ def invalidate_nonce(ticket_id: int) -> None:
             "Could not invalidate nonce for ticket %s (cache error).",
             ticket_id,
         )
+
+

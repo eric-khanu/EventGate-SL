@@ -1,5 +1,3 @@
-"""Canonical role names. Import these; never hard-code the strings."""
-
 GROUP_ORGANIZERS = "Organizers"
 GROUP_ADVERTISERS = "Advertisers"
 GROUP_SCANNERS = "Scanners"

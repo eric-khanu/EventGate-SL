@@ -1,22 +1,3 @@
-"""
-accounts/models.py
-~~~~~~~~~~~~~~~~~~
-User profile — the *only* model this app owns.
-
-Deliberately **not** here:
-
-* A custom User model. The project uses ``settings.AUTH_USER_MODEL``
-  throughout, so the stock ``django.contrib.auth.models.User`` is the
-  contract. Swapping it now is a migration hazard with no upside.
-* A ``role`` field. Roles are ``Group`` membership (see ``accounts.roles``
-  and the ``user_roles`` context processor). A second role store would let
-  the two disagree about who can reach the organizer dashboard.
-
-What *is* here: contact details and notification preferences that the
-stock User model doesn't provide, one row per user, created lazily via a
-``post_save`` signal or on demand.
-"""
-
 from __future__ import annotations
 
 from django.conf import settings

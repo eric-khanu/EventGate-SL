@@ -1,5 +1,3 @@
-"""App configuration for the advertisements app."""
-
 from django.apps import AppConfig
 
 

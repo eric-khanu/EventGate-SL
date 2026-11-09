@@ -1,13 +1,3 @@
-"""
-Context processors that expose role flags to every template.
-
-There is **one** processor (``user_roles``) and it is the single source of
-truth for ``is_organizer`` / ``is_advertiser`` / ``can_scan``. Do not add a
-second processor that returns the same keys — whichever is listed last in
-``TEMPLATES["OPTIONS"]["context_processors"]`` silently wins, and templates
-end up depending on ordering.
-"""
-
 from django.contrib.auth.models import AnonymousUser
 
 from advertisements.models import AdSubscription

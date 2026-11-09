@@ -1,5 +1,3 @@
-"""Forms for advertisement subscriptions and campaign creatives."""
-
 from django import forms
 from django.core.exceptions import ValidationError
 

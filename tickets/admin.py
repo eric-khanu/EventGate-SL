@@ -1,20 +1,3 @@
-"""Django admin for tickets and scan attempts.
-
-Design notes
-------------
-* ``Ticket`` is read-only in the admin. Status changes go through
-  ``Ticket.mark_used()`` / ``Ticket.void()`` — those are the only code paths
-  that uphold the state-machine invariants (used_at is set exactly when
-  status is 'scanned', a used ticket can't be voided, etc). The admin
-  exposes bulk *voiding* as an action, not as an editable field.
-* ``ScanAttempt`` is append-only. Every field is read-only, deletion is
-  disabled, and it's registered both as an inline on ``Ticket`` (for
-  per-ticket triage) and standalone (for "all scans today across every
-  event" queries).
-* No action here touches ``Token.token_key_version`` or the ciphertext —
-  key rotation is a deliberate operation, not a button in the admin.
-"""
-
 from __future__ import annotations
 
 from django.contrib import admin, messages

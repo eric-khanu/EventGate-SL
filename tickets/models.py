@@ -1,24 +1,3 @@
-"""
-tickets/models.py
-~~~~~~~~~~~~~~~~~
-Issued tickets, their encrypted tokens, and scan audit history.
-
-Design notes
-------------
-* Raw ticket tokens are generated once, encrypted immediately, and never
-  stored in plaintext. Only ``token_hash`` (SHA-256) is searchable.
-* Encryption is version-keyed so keys can be rotated without invalidating
-  already-issued tickets: old ciphertexts stay readable via their recorded
-  ``token_key_version``.
-* ``get_raw_token()`` is a pure decrypt. It never re-encrypts, never writes
-  to the DB, and never invalidates outstanding screenshots. Key rotation is
-  an explicit, deliberate operation (``rotate_key()``) — not a side effect
-  of someone viewing their ticket page.
-* Scan state transitions use conditional ``UPDATE … WHERE status='valid'``
-  so concurrent scans can't both be accepted without an outer transaction
-  lock.
-"""
-
 from __future__ import annotations
 
 import hashlib

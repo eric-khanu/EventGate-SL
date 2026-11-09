@@ -1,5 +1,3 @@
-"""Views for advertisement subscriptions, campaigns, and tracking."""
-
 import logging
 
 from django.conf import settings
@@ -187,13 +185,7 @@ def campaign_create(request):
 @csrf_exempt
 @require_POST
 def impression(request: HttpRequest, pk: int) -> JsonResponse:
-    """
-    Increment impression count for a live campaign.
 
-    CSRF-exempt + rate-limited: tracking must work from any page, so the
-    CSRF token is not available. The rate limit (one bump per IP per minute
-    per campaign) is the abuse control.
-    """
     if _throttled(request, pk, "impression"):
         return JsonResponse({"ok": True, "throttled": True})
 
@@ -209,13 +201,7 @@ def impression(request: HttpRequest, pk: int) -> JsonResponse:
 
 
 def click(request: HttpRequest, pk: int) -> HttpResponseRedirect:
-    """
-    Increment click count and redirect to the campaign's target URL.
-
-    GET + CSRF-exempt (standard for ad networks — `<a href>` cannot POST).
-    Rate limit + target URL whitelist (see ``safe_target_url``) are the
-    abuse controls.
-    """
+   
     try:
         campaign = _live_campaign_or_404(pk)
     except Http404:

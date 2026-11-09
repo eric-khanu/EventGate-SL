@@ -1,5 +1,3 @@
-"""Views for order verification and payment proof."""
-
 import logging
 
 from django.contrib import messages

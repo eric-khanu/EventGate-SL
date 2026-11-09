@@ -1,15 +1,3 @@
-"""Public browsing + organizer management of events and their tiers.
-
-All organizer-facing views are gated by ``@organizer_required`` (from
-``accounts.permissions``) **and** scope their queryset to
-``organizer=request.user`` — the decorator is the role check, the queryset
-filter is the object-level check. Both must hold.
-
-Scanner management goes through ``events.permissions.can_manage_scanners``
-so that staff and organizer-of-this-event both work without duplicating the
-rule here.
-"""
-
 from __future__ import annotations
 
 import logging

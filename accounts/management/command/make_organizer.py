@@ -1,10 +1,3 @@
-"""Create the management commands package structure:
-
-accounts/management/__init__.py
-accounts/management/commands/__init__.py
-accounts/management/commands/make_organizer.py
-"""
-
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core.management.base import BaseCommand, CommandError

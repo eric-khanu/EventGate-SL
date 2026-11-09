@@ -1,5 +1,3 @@
-"""Accounts signals — eagerly create a profile for new users."""
-
 import logging
 
 from django.conf import settings
