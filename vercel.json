@@ -2,17 +2,10 @@
   "builds": [
     {
       "src": "config/wsgi.py",
-      "use": "@vercel/python",
-      "config": {
-        "buildCommand": "chmod +x build.sh && ./build.sh"
-      }
+      "use": "@vercel/python"
     }
   ],
   "routes": [
-    {
-      "src": "/static/(.*)",
-      "dest": "/static/$1"
-    },
     {
       "src": "/(.*)",
       "dest": "config/wsgi.py"
