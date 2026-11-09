@@ -122,6 +122,7 @@ class Event(models.Model):
                 name="event_ends_after_starts",
             ),
         ]
+      
 
     def __str__(self):
         return self.title
