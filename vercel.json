@@ -1,5 +1,5 @@
 {
-  "buildCommand": "python manage.py collectstatic --noinput",
+  "buildCommand": "chmod +x build.sh && ./build.sh",
   "builds": [
     {
       "src": "config/wsgi.py",
