@@ -258,6 +258,21 @@
     }
   }
 
+  // --- NEW: iOS Speech Unlock ---
+  function unlockSpeech() {
+    if (!('speechSynthesis' in window)) return;
+    try {
+      // Speak a silent, empty utterance to unlock the speech engine
+      const utterance = new SpeechSynthesisUtterance(" ");
+      utterance.volume = 0;
+      utterance.rate = 10;
+      window.speechSynthesis.speak(utterance);
+      log("info", "Speech engine unlocked.");
+    } catch (e) {
+      log("warn", "Speech unlock failed.", e.message);
+    }
+  }
+
   function stopAlarm() {
     if (activeAlarm) {
       try { activeAlarm.oscillator.stop(); } catch (_) {}
@@ -314,10 +329,8 @@
 
   function speak(text) {
     if (!('speechSynthesis' in window)) return;
-    // Cancel ongoing speech to prevent overlap
     window.speechSynthesis.cancel();
     
-    // Small delay ensures iOS doesn't drop the voice if a beep just played
     setTimeout(() => {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 1.0;
@@ -440,7 +453,6 @@
     
     setResult("err", "✕ Entry Denied — " + message, details);
 
-    // Determine exactly which error to announce
     if (message.toLowerCase().includes("already") || (data.code && data.code.toLowerCase().includes("used"))) {
       triggerAlert("already_used");
     } else {
@@ -460,7 +472,6 @@
       scanCooldownUntil = Date.now() + 1600;
     }
 
-    // Guard: Block random non-EventGate QR codes from hitting the server
     if (!rawText.trim().startsWith("{") || !rawText.includes('"v":')) {
       log("warn", "Scanned item is not an EventGate format.", { text: rawText.slice(0, 20) });
       setResult("err", "✕ Not an EventGate ticket.");
@@ -499,7 +510,8 @@
     if (!eventSelect.value) { setResult("err", "Select an event first."); return; }
     
     await initializeAudio(); 
-
+    unlockSpeech(); // <--- CRITICAL: Unlocks iOS Speech Engine
+    
     if (typeof window.Html5Qrcode !== "function") {
       setResult("err", "Scanner library did not load. Check your connection.");
       return;
@@ -571,6 +583,7 @@
     
     manualInput.value = "";
     await initializeAudio();
+    unlockSpeech(); // <--- CRITICAL: Unlocks iOS Speech Engine for manual entry too
     await processPayload(payload, "manual");
   });
 
