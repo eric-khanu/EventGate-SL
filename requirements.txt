@@ -1,6 +1,5 @@
 asgiref==3.12.1
 cffi==2.1.1
-colorama==0.4.6
 cryptography==50.0.2
 dj-database-url==3.1.2
 Django==6.1.2
@@ -11,8 +10,8 @@ psycopg==3.3.6
 psycopg-binary==3.3.6
 pycparser==3.11
 python-dateutil==2.9.0.post0
-python-magic==0.4.27
-python-magic-bin==0.4.14
+python-magic==0.4.27; platform_system != "Windows"
+python-magic-bin==0.4.14; platform_system == "Windows"
 qrcode==8.2
 six==1.17.0
 sqlparse==0.6.0
