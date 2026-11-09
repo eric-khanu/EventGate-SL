@@ -124,9 +124,11 @@
 (function () {
   "use strict";
 
-  // ---- DOM Handles ---------------------------------------------------
+  // ======================================================================
+  // 1. DOM Handles & Configuration
+  // ======================================================================
   const debugPanel = document.getElementById("debug-panel");
-  const result = document.getElementById("scan-result");
+  const resultBox = document.getElementById("scan-result");
   const eventSelect = document.getElementById("event-select");
   const startBtn = document.getElementById("start-scan");
   const stopBtn = document.getElementById("stop-scan");
@@ -141,7 +143,7 @@
   const volumeInput = document.getElementById("scanner-volume");
   const volumeLabel = document.getElementById("volume-label");
 
-  if (!result || !eventSelect || !startBtn || !stopBtn) return;
+  if (!resultBox || !eventSelect || !startBtn || !stopBtn) return;
 
   const SCAN_URL = "{% url 'tickets:scanner_scan' %}";
   const RESULT_CLASSES = {
@@ -151,7 +153,9 @@
     err: "rounded-xl p-4 bg-red-100 text-red-900 text-sm"
   };
 
-  // ---- State ---------------------------------------------------------
+  // ======================================================================
+  // 2. State Variables
+  // ======================================================================
   let scanner = null;
   let inflight = false;
   let isScanning = false;
@@ -161,7 +165,6 @@
   let audioContext = null;
   let activeAlarm = null;
   let volume = Number(volumeInput && volumeInput.value || 35) / 100;
-  let lastOutcomeSoundAt = 0;
 
   const deviceId = (function() {
     try {
@@ -171,27 +174,19 @@
         sessionStorage.setItem("eventgate-device", id);
       }
       return id;
-    } catch (e) {
-      return "dev-fallback-" + Date.now();
-    }
+    } catch (e) { return "dev-fallback-" + Date.now(); }
   })();
 
-  // ---- Utilities -----------------------------------------------------
-  function safeStr(val) {
-    try {
-      if (typeof val === "string") return val;
-      if (val instanceof Error) return val.name + ": " + val.message;
-      return JSON.stringify(val);
-    } catch (_) { return String(val); }
-  }
-
+  // ======================================================================
+  // 3. Utilities
+  // ======================================================================
   function log(level, message, data) {
     const timestamp = new Date().toISOString().slice(11, 23);
-    const symbols = {info:"ℹ", ok:"✔", warn:"⚠", err:"✖"};
-    const line = "[" + timestamp + "] " + (symbols[level] || "•") + " " + message + (data !== undefined ? "  " + safeStr(data) : "");
+    const symbols = { info: "ℹ", ok: "✔", warn: "⚠", err: "✖" };
+    const line = `[${timestamp}] ${symbols[level] || "•"} ${message}` + (data !== undefined ? `  ${JSON.stringify(data)}` : "");
     
     const consoleMethod = level === "err" ? "error" : level === "warn" ? "warn" : "log";
-    console[consoleMethod]("[scanner]", message, data !== undefined ? data : "");
+    console[consoleMethod]("[scanner]", message, data || "");
     
     if (debugPanel) {
       const item = document.createElement("div");
@@ -212,7 +207,7 @@
 
   function setResult(kind, message, extra) {
     if (lastResultTimer) { clearTimeout(lastResultTimer); lastResultTimer = null; }
-    result.className = RESULT_CLASSES[kind] || RESULT_CLASSES.idle;
+    resultBox.className = RESULT_CLASSES[kind] || RESULT_CLASSES.idle;
     
     const fragment = document.createDocumentFragment();
     const headline = document.createElement("strong");
@@ -220,16 +215,16 @@
     headline.textContent = message;
     fragment.appendChild(headline);
     
-    (extra || []).forEach(function (line) {
+    (extra || []).forEach(line => {
       const p = document.createElement("p");
       p.className = "mt-1 text-xs opacity-80";
       p.textContent = line;
       fragment.appendChild(p);
     });
-    result.replaceChildren(fragment);
+    resultBox.replaceChildren(fragment);
 
     if (kind === "ok" || kind === "err") {
-      lastResultTimer = setTimeout(function () {
+      lastResultTimer = setTimeout(() => {
         if (!inflight && !activeAlarm) setResult("idle", isScanning ? "Camera active. Scan an EventGate ticket." : "Scanner ready.");
       }, 4000);
     }
@@ -247,7 +242,9 @@
     if (navigator.vibrate) { try { navigator.vibrate(pattern); } catch (_) {} }
   }
 
-  // ---- Audio Engine --------------------------------------------------
+  // ======================================================================
+  // 4. Audio & Voice Engine
+  // ======================================================================
   async function initializeAudio() {
     try {
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -256,7 +253,7 @@
       if (audioContext.state === "suspended") await audioContext.resume();
       return audioContext.state === "running";
     } catch (error) {
-      log("warn", "Audio initialization failed.", error && error.message);
+      log("warn", "Audio initialization failed.", error.message);
       return false;
     }
   }
@@ -289,7 +286,7 @@
     gain.connect(audioContext.destination);
     oscillator.start(now);
     oscillator.stop(now + duration + 0.02);
-    oscillator.addEventListener("ended", function () {
+    oscillator.addEventListener("ended", () => {
       try { oscillator.disconnect(); gain.disconnect(); } catch (_) {}
     }, {once:true});
   }
@@ -311,48 +308,56 @@
     oscillator.connect(gain);
     gain.connect(audioContext.destination);
     oscillator.start(now);
-    activeAlarm = {oscillator: oscillator, gain: gain};
+    activeAlarm = { oscillator, gain };
     stopAlarmBtn.disabled = false;
   }
 
-  function playOutcomeSound(type) {
-    const now = Date.now();
-    if (now - lastOutcomeSoundAt < 700) return;
-    lastOutcomeSoundAt = now;
+  function speak(text) {
+    if (!('speechSynthesis' in window)) return;
+    // Cancel ongoing speech to prevent overlap
+    window.speechSynthesis.cancel();
     
+    // Small delay ensures iOS doesn't drop the voice if a beep just played
+    setTimeout(() => {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.volume = Math.min(1.0, volume * 1.5);
+      window.speechSynthesis.speak(utterance);
+    }, 150);
+  }
+
+  function triggerAlert(type) {
     if (type === "valid") {
       stopAlarm();
-      playBeep(660, 1000, 0.8); 
-    } else if (type === "rejected") {
-      startAlarm(); 
+      playBeep(660, 800, 0.8);
+      speak("Ticket is valid");
+      vibrate(100);
+    } else if (type === "already_used") {
+      startAlarm();
+      speak("Ticket already scanned");
+      vibrate([200, 100, 200]);
+    } else if (type === "invalid") {
+      startAlarm();
+      speak("Ticket not valid or forged");
+      vibrate([300, 100, 300]);
     } else {
       stopAlarm();
-      playBeep(420, 350, 0.65); 
+      playBeep(420, 350, 0.65);
+      speak("Ticket not valid or forged");
+      vibrate([150, 70, 150]);
     }
   }
 
-  if (volumeInput) {
-    volumeInput.addEventListener("input", function () {
-      volume = Number(volumeInput.value) / 100;
-      if (volumeLabel) volumeLabel.textContent = volumeInput.value + "%";
-      if (activeAlarm && audioContext) {
-        activeAlarm.gain.gain.setTargetAtTime(Math.min(0.32, volume * 0.65), audioContext.currentTime, 0.03);
-      }
-    });
-  }
-
-  stopAlarmBtn.addEventListener("click", function () {
-    stopAlarm();
-    setResult("idle", "Alarm stopped. Scanner remains active.");
-  });
-
-  // ---- API & Camera --------------------------------------------------
+  // ======================================================================
+  // 5. API & Server Communication
+  // ======================================================================
   async function submitScan(rawQrString) {
-    let csrf = getCookie("csrftoken");
-    if (!csrf) throw new Error("Missing CSRF token. Refresh the page and try again.");
+    const csrf = getCookie("csrftoken");
+    if (!csrf) throw new Error("Missing CSRF token. Refresh the page.");
     if (!eventSelect.value) throw new Error("Select an event first.");
 
-    log("info", "Submitting ticket validation", {bytes: rawQrString.length});
+    log("info", "Submitting ticket validation", { bytes: rawQrString.length });
     const response = await fetch(SCAN_URL, {
       method: "POST",
       headers: {
@@ -360,16 +365,16 @@
         "X-CSRFToken": csrf,
         "X-Requested-With": "XMLHttpRequest"
       },
-      body: JSON.stringify({qr: rawQrString, event: eventSelect.value, device_id: deviceId}),
+      body: JSON.stringify({ qr: rawQrString, event: eventSelect.value, device_id: deviceId }),
       credentials: "same-origin"
     });
 
     const contentType = response.headers.get("content-type") || "";
     if (!contentType.toLowerCase().includes("application/json")) {
-      throw new Error("Server returned a non-JSON response. Your session may have expired.");
+      throw new Error("Server returned non-JSON. Session expired?");
     }
-    const data = await response.json().catch(function () { return {}; });
-    log("info", "Validation response", {status: response.status, code: data.code});
+    const data = await response.json().catch(() => ({}));
+    log("info", "Validation response", { status: response.status, code: data.code });
     
     if (!response.ok && !data.message) {
       throw new Error("Server rejected the scan (HTTP " + response.status + ").");
@@ -377,6 +382,9 @@
     return data;
   }
 
+  // ======================================================================
+  // 6. UI Updates & Rendering
+  // ======================================================================
   function updateStats(data) {
     if (!data.ticket || !data.ticket.public_id) return;
     if (statToday) statToday.textContent = (parseInt(statToday.textContent, 10) || 0) + 1;
@@ -410,7 +418,7 @@
     row.append(timeCell, ticketCell, detailCell);
     
     recentBody.insertBefore(row, recentBody.firstChild);
-    setTimeout(function () { row.classList.remove("bg-emerald-50"); }, 2000);
+    setTimeout(() => row.classList.remove("bg-emerald-50"), 2000);
   }
 
   function renderOutcome(data) {
@@ -418,9 +426,9 @@
       const details = [];
       if (data.event) details.push("Event: " + data.event);
       if (data.ticket && data.ticket.tier) details.push("Tier: " + data.ticket.tier);
+      
       setResult("ok", "✓ Ticket is Valid", details);
-      playOutcomeSound("valid");
-      vibrate(100);
+      triggerAlert("valid");
       updateStats(data);
       log("ok", "Ticket accepted by server.");
       return;
@@ -428,13 +436,22 @@
 
     const details = [];
     if (data && data.scanned_at) details.push("Originally scanned: " + data.scanned_at);
-    const message = data && data.message ? data.message : "Invalid or previously scanned ticket.";
+    const message = data && data.message ? data.message : "Invalid or forged ticket.";
+    
     setResult("err", "✕ Entry Denied — " + message, details);
-    playOutcomeSound("rejected");
-    vibrate([300, 100, 300]);
-    log("warn", "Ticket rejected by server.", {code: data && data.code});
+
+    // Determine exactly which error to announce
+    if (message.toLowerCase().includes("already") || (data.code && data.code.toLowerCase().includes("used"))) {
+      triggerAlert("already_used");
+    } else {
+      triggerAlert("invalid");
+    }
+    log("warn", "Ticket rejected by server.", { code: data && data.code });
   }
 
+  // ======================================================================
+  // 7. Main Processing Loop
+  // ======================================================================
   async function processPayload(rawText, source) {
     if (!rawText || inflight) return;
     if (source === "camera" && rawText === lastRaw && Date.now() < scanCooldownUntil) return;
@@ -443,28 +460,26 @@
       scanCooldownUntil = Date.now() + 1600;
     }
 
-    // Guard: Do not send random non-EventGate QRs to the server
+    // Guard: Block random non-EventGate QR codes from hitting the server
     if (!rawText.trim().startsWith("{") || !rawText.includes('"v":')) {
-        log("warn", "Scanned item is not an EventGate ticket format.", {text: rawText.slice(0, 20)});
-        setResult("err", "✕ Not an EventGate ticket.");
-        playOutcomeSound("error");
-        vibrate(200);
-        return; 
+      log("warn", "Scanned item is not an EventGate format.", { text: rawText.slice(0, 20) });
+      setResult("err", "✕ Not an EventGate ticket.");
+      triggerAlert("error");
+      return; 
     }
 
     inflight = true;
     if (manualSubmit) manualSubmit.disabled = true;
     setResult("busy", "Checking ticket…");
-    log("info", "QR payload received", {source: source, length: rawText.length});
+    log("info", "QR payload received", { source, length: rawText.length });
 
     try {
       const data = await submitScan(rawText);
       renderOutcome(data);
     } catch (error) {
-      log("err", "Ticket validation request failed", error && error.message);
-      setResult("err", error && error.message ? error.message : "Could not validate ticket.");
-      playOutcomeSound("error");
-      vibrate([150, 70, 150]);
+      log("err", "Ticket validation failed", error.message);
+      setResult("err", error.message || "Could not validate ticket.");
+      triggerAlert("error");
     } finally {
       inflight = false;
       if (manualSubmit) manualSubmit.disabled = false;
@@ -476,14 +491,17 @@
     await processPayload(decodedText, "camera");
   }
 
+  // ======================================================================
+  // 8. Camera Lifecycle
+  // ======================================================================
   async function startScanner() {
     if (isScanning || scanner) return;
     if (!eventSelect.value) { setResult("err", "Select an event first."); return; }
     
-    await initializeAudio(); // Browser audio requires user gesture
+    await initializeAudio(); 
 
     if (typeof window.Html5Qrcode !== "function") {
-      setResult("err", "Scanner library did not load. Check your connection and refresh.");
+      setResult("err", "Scanner library did not load. Check your connection.");
       return;
     }
     if (!window.isSecureContext) { setResult("err", "Camera access requires HTTPS."); return; }
@@ -494,27 +512,27 @@
     startBtn.disabled = true;
     try {
       scanner = new window.Html5Qrcode("reader");
-      await new Promise(function (resolve) { requestAnimationFrame(function () { requestAnimationFrame(resolve); }); });
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       
       const boxSize = Math.max(160, Math.min(250, (readerEl.clientWidth || 260) - 20));
-      const config = {fps: 10, qrbox: {width: boxSize, height: boxSize}};
+      const config = { fps: 10, qrbox: { width: boxSize, height: boxSize } };
 
       try {
-        await scanner.start({facingMode:"environment"}, config, onScan, function () {});
+        await scanner.start({ facingMode: "environment" }, config, onScan, () => {});
       } catch (cameraError) {
         if (cameraError && (cameraError.name === "NotAllowedError" || cameraError.name === "SecurityError")) throw cameraError;
-        const cameras = await window.Html5Qrcode.getCameras().catch(function () { return []; });
+        const cameras = await window.Html5Qrcode.getCameras().catch(() => []);
         if (!cameras.length) throw new Error("No camera found on this device.");
-        const rearCamera = cameras.find(function (c) { return /back|rear|environment/i.test(c.label || ""); });
-        await scanner.start((rearCamera || cameras[0]).id, config, onScan, function () {});
+        const rearCamera = cameras.find(c => /back|rear|environment/i.test(c.label || ""));
+        await scanner.start((rearCamera || cameras[0]).id, config, onScan, () => {});
       }
 
       setScanButtons(true);
       setResult("idle", "Camera active. Scan an EventGate ticket.");
       log("ok", "Camera scanner started.");
     } catch (error) {
-      log("err", "Camera could not start", {name: error && error.name, message: error && error.message});
-      setResult("err", "Camera could not start. " + (error && error.message ? error.message : ""));
+      log("err", "Camera could not start", { name: error.name, message: error.message });
+      setResult("err", "Camera could not start. " + (error.message || ""));
       await stopScanner();
     }
   }
@@ -529,15 +547,23 @@
     setScanButtons(false);
   }
 
-  // ---- Event Listeners -----------------------------------------------
+  // ======================================================================
+  // 9. Event Listeners
+  // ======================================================================
   startBtn.addEventListener("click", startScanner);
-  stopBtn.addEventListener("click", async function () {
+  
+  stopBtn.addEventListener("click", async () => {
     stopAlarm();
     await stopScanner();
     setResult("idle", "Scanner stopped.");
   });
 
-  manualForm.addEventListener("submit", async function (event) {
+  stopAlarmBtn.addEventListener("click", () => {
+    stopAlarm();
+    setResult("idle", "Alarm stopped. Scanner remains active.");
+  });
+
+  manualForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!eventSelect.value) { setResult("err", "Select an event first."); return; }
     const payload = manualInput.value.trim();
@@ -548,17 +574,30 @@
     await processPayload(payload, "manual");
   });
 
-  eventSelect.addEventListener("change", function () {
+  eventSelect.addEventListener("change", () => {
     startBtn.disabled = isScanning || !eventSelect.value || !window.isSecureContext;
     stopAlarm();
   });
 
-  window.addEventListener("beforeunload", function () {
+  if (volumeInput) {
+    volumeInput.addEventListener("input", () => {
+      volume = Number(volumeInput.value) / 100;
+      if (volumeLabel) volumeLabel.textContent = volumeInput.value + "%";
+      if (activeAlarm && audioContext) {
+        activeAlarm.gain.gain.setTargetAtTime(Math.min(0.32, volume * 0.65), audioContext.currentTime, 0.03);
+      }
+    });
+  }
+
+  window.addEventListener("beforeunload", () => {
     stopAlarm();
     if (scanner) { try { scanner.stop(); } catch (_) {} }
     if (audioContext && audioContext.state !== "closed") { try { audioContext.close(); } catch (_) {} }
   });
 
+  // ======================================================================
+  // 10. Initialization
+  // ======================================================================
   setScanButtons(false);
   if (!window.isSecureContext) {
     setResult("err", "Camera requires HTTPS. Use HTTPS or http://localhost for local development.");
